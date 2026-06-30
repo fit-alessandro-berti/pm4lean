@@ -11,6 +11,23 @@ structure WFNetStructure (W : WFNet) : Prop where
   unique_sink : ∀ p : W.net.Place, SinkPlace W.net p → p = W.o
   every_node_on_path : EveryNodeOnPath W.net W.i W.o
 
+/-- A workflow net bundled with its classical structural side conditions. -/
+structure StructuredWFNet where
+  wfnet : WFNet
+  structure_ok : WFNetStructure wfnet
+
+namespace StructuredWFNet
+
+abbrev Marking (W : StructuredWFNet) := W.wfnet.Marking
+
+def initial (W : StructuredWFNet) : W.Marking :=
+  W.wfnet.initial
+
+def final (W : StructuredWFNet) : W.Marking :=
+  W.wfnet.final
+
+end StructuredWFNet
+
 namespace WFNetStructure
 
 theorem no_incoming_to_initial {W : WFNet} (h : WFNetStructure W) :

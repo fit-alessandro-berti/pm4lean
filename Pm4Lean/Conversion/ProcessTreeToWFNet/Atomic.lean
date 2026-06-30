@@ -1,4 +1,5 @@
 import Pm4Lean.Conversion.ProcessTreeToWFNet
+import Pm4Lean.Models.Petri.WFNet.Examples.SingleTransition
 
 namespace Pm4Lean
 namespace ProcessModel

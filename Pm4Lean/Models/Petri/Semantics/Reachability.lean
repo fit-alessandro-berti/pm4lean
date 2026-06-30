@@ -50,6 +50,12 @@ theorem exists_firingSequence {N : Net} {M M' : N.Marking}
       | fire hEnabled =>
           exact ⟨_ :: ts, FiringSequence.cons hEnabled hSeq⟩
 
+theorem of_nat_chain {N : Net} (F : Nat → N.Marking)
+    (hStep : ∀ n : Nat, Reachable N (F n) (F (n + 1))) :
+    ∀ n : Nat, Reachable N (F 0) (F n)
+  | 0 => Reachable.refl (F 0)
+  | n + 1 => Reachable.trans (of_nat_chain F hStep n) (hStep n)
+
 end Reachable
 end Petri
 end Pm4Lean

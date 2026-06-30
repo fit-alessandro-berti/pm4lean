@@ -32,6 +32,15 @@ variable (N : Net)
 
 abbrev Marking := Petri.Marking N.Place
 
+/--
+The stored finite enumerations have no duplicates.  This is kept separate from
+`Net` so semantic constructions do not need to be refactored, while algorithmic
+and counting arguments can require it explicitly.
+-/
+structure EnumerationOK : Prop where
+  places_nodup : N.places.Nodup
+  transitions_nodup : N.transitions.Nodup
+
 end Net
 end Petri
 end Pm4Lean

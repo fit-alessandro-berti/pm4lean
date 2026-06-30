@@ -1,4 +1,5 @@
 import Pm4Lean.Models.Petri.Basic.Marking
+import Pm4Lean.Models.Petri.Basic.Marking.Support
 import Pm4Lean.Models.Petri.Basic.Net
 import Pm4Lean.Models.Petri.Semantics.Enabled
 import Pm4Lean.Models.Petri.Semantics.Fire
@@ -13,6 +14,7 @@ import Pm4Lean.Models.Petri.WFNet.Basic
 import Pm4Lean.Models.Petri.WFNet.InitialFinalMarking
 import Pm4Lean.Models.Petri.WFNet.WFNetStructure
 import Pm4Lean.Models.Petri.WFNet.Language
+import Pm4Lean.Models.Petri.WFNet.Examples.SingleTransition
 import Pm4Lean.Models.Petri.WFNet.Behavior.OptionToComplete
 import Pm4Lean.Models.Petri.WFNet.Behavior.ProperCompletion
 import Pm4Lean.Models.Petri.WFNet.Behavior.NoDeadTransitions

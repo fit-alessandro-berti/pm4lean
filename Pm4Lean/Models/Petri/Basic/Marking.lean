@@ -32,6 +32,20 @@ theorem le_trans {M N K : Marking Place} (hMN : M ≤ N) (hNK : N ≤ K) :
     M ≤ K :=
   fun p => Nat.le_trans (hMN p) (hNK p)
 
+theorem exists_lt_of_le_ne {M N : Marking Place} (hLe : M ≤ N)
+    (hNe : M ≠ N) :
+    ∃ p : Place, M p < N p := by
+  classical
+  by_cases hExists : ∃ p : Place, M p < N p
+  · exact hExists
+  · exact False.elim (hNe (by
+      apply funext
+      intro p
+      exact Nat.le_antisymm (hLe p)
+        (Nat.le_of_not_gt (by
+          intro hLt
+          exact hExists ⟨p, hLt⟩))))
+
 theorem ext {M N : Marking Place} (h : ∀ p, M p = N p) : M = N :=
   funext h
 
@@ -53,6 +67,10 @@ def add (M N : Marking Place) : Marking Place :=
 def sub (M N : Marking Place) : Marking Place :=
   fun p => M p - N p
 
+/-- Scale every place of a marking by a natural number. -/
+def scale (n : Nat) (M : Marking Place) : Marking Place :=
+  fun p => n * M p
+
 instance : Add (Marking Place) where
   add := add
 
@@ -64,6 +82,27 @@ theorem add_apply (M N : Marking Place) (p : Place) :
 
 theorem sub_apply (M N : Marking Place) (p : Place) :
     (M - N) p = M p - N p := rfl
+
+theorem scale_apply (n : Nat) (M : Marking Place) (p : Place) :
+    scale n M p = n * M p := rfl
+
+theorem add_zero (M : Marking Place) :
+    M + zero = M := by
+  apply ext
+  intro p
+  exact Nat.add_zero (M p)
+
+theorem zero_add (M : Marking Place) :
+    zero + M = M := by
+  apply ext
+  intro p
+  exact Nat.zero_add (M p)
+
+theorem scale_zero (M : Marking Place) :
+    scale 0 M = zero := by
+  apply ext
+  intro p
+  simp [scale, zero]
 
 theorem sub_eq_zero_of_le {M N : Marking Place} (h : M ≤ N) :
     M - N = zero := by
