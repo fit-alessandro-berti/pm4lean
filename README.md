@@ -42,10 +42,14 @@ Pm4Lean/
     Petri/...
     ProcessTree.lean          aggregate imports for process trees
     ProcessTree/Basic.lean
+    ProcessTree/Semantics.lean
     POWL.lean                 aggregate imports for POWL
     POWL/Basic.lean
+    POWL/Semantics.lean
     BPMN.lean                 aggregate imports for BPMN
     BPMN/Basic.lean
+    BPMN/Semantics.lean
+    BPMN/Examples.lean
   Conversion.lean             aggregate imports for conversions
   Conversion/
     Basic.lean
@@ -53,6 +57,7 @@ Pm4Lean/
     ProcessTreeToPOWL.lean
     ProcessTreeToBPMN.lean
     ProcessTreeToWFNet.lean
+    ProcessTreeToWFNet/Atomic.lean
 ```
 
 Important entry points:
@@ -141,7 +146,9 @@ The first checked-in foundation includes:
 - a WF-net conversion proof obligation combining preservation and target
   soundness,
 - a labeled-WF-net conversion proof obligation combining concrete trace
-  preservation and soundness of the underlying WF-net.
+  preservation and soundness of the underlying WF-net,
+- an atomic process-tree-to-labeled-WF-net conversion artifact for visible
+  activity leaves, with a proved language-equivalence theorem.
 
 ## Next Proof Targets
 
@@ -149,7 +156,7 @@ The next useful proof layer is the remaining WOFLAN-oriented infrastructure:
 
 - transition occurrence lemmas for relaxed soundness,
 - structured process-tree-to-labeled-WF-net conversions with preservation and
-  soundness proofs,
+  soundness proofs beyond atomic activity leaves,
 - richer BPMN semantics for gateway synchronization, branching constraints, and
   structured fragments,
 - a refined POWL semantics for precedence-constrained interleavings of

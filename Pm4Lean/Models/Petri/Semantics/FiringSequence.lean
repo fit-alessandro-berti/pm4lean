@@ -13,6 +13,12 @@ inductive FiringSequence (N : Net) : N.Marking → List N.Transition → N.Marki
 
 namespace FiringSequence
 
+theorem eq_of_nil {N : Net} {M M' : N.Marking}
+    (h : FiringSequence N M [] M') :
+    M = M' := by
+  cases h
+  rfl
+
 theorem append {N : Net} {M M' M'' : N.Marking}
     {xs ys : List N.Transition}
     (hxs : FiringSequence N M xs M') (hys : FiringSequence N M' ys M'') :

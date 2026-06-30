@@ -1,5 +1,5 @@
 import Pm4Lean.Conversion.ProcessTree
-import Pm4Lean.Models.POWL.Basic
+import Pm4Lean.Models.POWL.Semantics
 
 namespace Pm4Lean
 namespace ProcessModel

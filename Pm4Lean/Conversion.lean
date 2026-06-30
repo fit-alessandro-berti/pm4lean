@@ -10,3 +10,4 @@ import Pm4Lean.Conversion.ProcessTree
 import Pm4Lean.Conversion.ProcessTreeToPOWL
 import Pm4Lean.Conversion.ProcessTreeToBPMN
 import Pm4Lean.Conversion.ProcessTreeToWFNet
+import Pm4Lean.Conversion.ProcessTreeToWFNet.Atomic
