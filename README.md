@@ -77,13 +77,34 @@ the proof obligation is not yet discharged in the repository.
 
   The library defines `BoundedBy`, `Bounded`, `Safe`,
   `TokenSumBoundedReachable`, and `LinearTokenGrowthAt`, together with basic
-  conversions between per-place boundedness and token-sum boundedness.
+  conversions between per-place boundedness and token-sum boundedness.  It
+  also proves classical negation forms such as:
+
+  ```lean
+  ¬ Bounded N M₀ ↔
+    ∀ k, ∃ M, Reachable N M₀ M ∧ ∃ p, k < M p
+  ```
+
+  It also proves that a finite list covering all reachable markings implies
+  `Bounded N M₀`, and conversely that an unbounded net has no such finite
+  reachable cover.  This gives a reusable finite-state route to boundedness.
 
 - Original-vs-short-circuit boundedness transfer.
 
   If the original net is token-bounded and proper completion holds, then the
   short-circuited net is bounded.  If the short-circuited net is bounded, then
   the original reachable markings are bounded.
+
+- Generic firing-sequence infrastructure.
+
+  Firing sequences can be appended, split over `xs ++ ys`, split over
+  `(xs ++ ys) ++ zs`, and are deterministic for a fixed initial marking and
+  transition list.  These lemmas support the final finite extraction step in
+  the WOFLAN proof.  The semantics layer also proves token-sum growth bounds:
+  one firing increases the total token count over a finite place list by at
+  most the fired transition's post-weight sum, and a concrete firing sequence
+  is bounded by its length times a uniform post-weight bound.  The uniform
+  post-weight bound is computed from the net's finite transition enumeration.
 
 - Liveness proof vocabulary and liveness/soundness implications.
 
@@ -103,7 +124,7 @@ the proof obligation is not yet discharged in the repository.
   that firing the short-circuit return transition from such a marking creates
   reachable markings exceeding the initial marking at some place.
 
-- Conditional pumping-to-unboundedness lemmas.
+- Extra-final-cover pumping and unboundedness.
 
   Several pumping interfaces are formalized and connected:
 
@@ -114,77 +135,105 @@ the proof obligation is not yet discharged in the repository.
   - accumulation plans,
   - pumping above every bound.
 
-  The code proves that these obligations imply unboundedness of the
-  short-circuited net when an extra-final-cover marking exists.
+  The code proves the concrete closed-form step for every extra-final-cover
+  marking.  Therefore an extra-final-cover marking in the original net gives
+  unbounded growth in the short-circuited net.  Consequently, bounded
+  short-circuit behavior excludes extra-final-cover markings and gives proper
+  completion of the original net.
 
-- Conditional soundness-via-short-circuit theorem family.
-
-  The main checked bridge has this shape:
-
-  ```lean
-  Sound W ↔
-    Live (shortCircuit W) W.initial ∧
-      Bounded (shortCircuit W) W.initial
-  ```
-
-  under explicit assumptions such as:
-
-  - original reachable markings are bounded, and
-  - live-and-bounded short-circuit behavior excludes extra-final-cover
-    markings, or a stronger pumping/growth condition that implies this
-    exclusion.
-
-### PARTLY DONE
-
-- The main WOFLAN proof is formalized, but only conditionally.
-
-  The code proves soundness-via-short-circuit for WF-nets when the missing
-  boundedness/exclusion obligations are supplied as hypotheses.  It does not
-  yet prove those obligations from standard WF-net structure alone.
-
-- Proper completion is connected to boundedness, but through an explicit
-  extra-token exclusion condition.
+- Reverse WOFLAN direction.
 
   The library proves:
 
   ```lean
-  ProperCompletion W ↔
-    ∀ M, ¬ HasExtraTokensAtFinalCover W M
+  Live (shortCircuit W) W.initial →
+    Bounded (shortCircuit W) W.initial →
+      Sound W
   ```
 
-  and shows that bounded short-circuit behavior gives proper completion when
-  `ShortCircuitBoundedExcludesExtraFinalCover W` is available.  The missing
-  part is a general proof that live and bounded short-circuit nets exclude
-  extra-final-cover markings for the intended class of WF-nets.
+  This no longer requires an external extra-final-cover exclusion or pumping
+  hypothesis.
 
-- Pumping obligations are represented, not yet proved generally.
+- Soundness-via-short-circuit theorem family.
 
-  Interfaces such as `ExtraFinalCoverClosedFormGrowth`,
-  `ExtraFinalCoverClosedFormStep`, and `ExtraFinalCoverAccumulationPlanAt`
-  describe ways to prove that extra-final-cover markings cause unboundedness.
-  The library proves the implications between these interfaces, but it does
-  not yet prove such plans from arbitrary WF-net structure.
+  The library proves the exact boundary currently available without the final
+  finite/Dickson extraction:
 
-- Boundedness is available as a theorem premise.
+  ```lean
+  Sound W ∧ TokenBoundedReachableOriginal W ↔
+    Live (shortCircuit W) W.initial ∧
+      Bounded (shortCircuit W) W.initial
+  ```
 
-  `Bounded` is a logical property over all reachable markings.  The current
-  WOFLAN proof bridge can use boundedness once provided, and can move between
-  original-net boundedness and short-circuit boundedness under the proved side
-  conditions.  What is missing is the proof layer that derives the needed
-  boundedness/exclusion facts from the standard WOFLAN hypotheses.
+  It also proves the classic theorem from one remaining proof obligation:
 
-- Liveness is available as a theorem premise and consequence.
+  ```lean
+  WoflanProofObligations W →
+    (Sound W ↔
+      Live (shortCircuit W) W.initial ∧
+        Bounded (shortCircuit W) W.initial)
+  ```
 
-  `Live` is a logical property over all reachable markings and transitions.
-  The code proves the forward direction from `Sound W` to
-  `Live (shortCircuit W) W.initial`, and proves useful consequences of
-  short-circuit liveness.  The remaining proof work is not a checker, but a
-  stronger unconditional theorem that combines liveness and boundedness into
-  soundness without additional ad hoc premises.
+- Self-cover bridge for original boundedness.
+
+  The remaining boundedness step has been reduced to a finite extraction
+  statement over concrete firing sequences.  The library proves:
+
+  - unbounded original reachable markings are equivalent to arbitrarily large
+    concrete firing-sequence markings;
+  - arbitrarily large concrete markings are equivalent to arbitrarily large
+    total token sums over the net's finite place enumeration;
+  - arbitrarily large total token sums imply arbitrarily long concrete firing
+    sequences, using the finite transition post-weight bound;
+  - a comparable cut trace, stated as a factored run with local prefix/loop
+    executions whose markings satisfy `M ≤ M'` and `M ≠ M'`, gives the
+    comparable-cuts witness used downstream;
+  - the public extraction obligation is now a finite threshold: every concrete
+    run longer than that threshold must contain a comparable cut trace;
+  - behavioral soundness excludes reachable and concrete firing-sequence
+    self-covers;
+  - therefore the remaining finite extraction implies original boundedness
+    under soundness.
+
+### PARTLY DONE
+
+- The main WOFLAN proof is formalized, but still conditionally.
+
+  The code proves soundness-via-short-circuit for WF-nets when the remaining
+  finite extraction obligation is supplied as a hypothesis.  It does not yet
+  prove that obligation from the finite enumeration data in `Net`.
+
+- The remaining obligation is now a single Dickson-style extraction.
+
+  The public obligation is:
+
+  ```lean
+  HasLongRunComparableCutTraceThreshold W
+  ```
+
+  Expanded:
+
+  ```lean
+  ∃ n,
+    ∀ ts Mend,
+      FiringSequence W.net W.initial ts Mend →
+        n < ts.length →
+          ComparableCutTrace W
+  ```
+
+  The library now proves the preliminary large-run bridge:
+
+  ```lean
+  ArbitrarilyLargeFiringSequenceMarking W →
+    ArbitrarilyLongFiringSequences W
+  ```
+
+  The remaining unproved part is exactly the finite/Dickson or pigeonhole
+  argument that produces such a threshold from the finite place enumeration.
 
 ### NOT DONE
 
-- No unconditional WOFLAN soundness theorem yet.
+- No unconditional classic WOFLAN soundness theorem yet.
 
   The desired proof target is the standard theorem, in Lean form, that for the
   intended class of WF-nets:
@@ -196,26 +245,15 @@ the proof obligation is not yet discharged in the repository.
   ```
 
   The library has conditional versions of this statement, but not yet the
-  fully discharged theorem from standard WF-net assumptions.
+  fully discharged theorem because the finite/Dickson extraction above is not
+  yet proved.
 
-- No general proof of the extra-final-cover exclusion lemma.
+- No formal Dickson lemma for finite place markings yet.
 
-  The library has the conditional theorem family, but the key
-  extra-final-cover exclusion/pumping argument is still externalized as a
-  hypothesis.
-
-- No general construction of pumping/growth plans.
-
-  The library proves that several pumping/growth formulations imply
-  short-circuit unboundedness.  It does not yet prove that every reachable
-  extra-final-cover marking in the relevant setting yields one of those
-  growth plans.
-
-- No full proof that bounded and live short-circuit nets force proper
-  completion of the original WF-net.
-
-  The current proof obtains proper completion from boundedness and liveness
-  only after an explicit exclusion/pumping condition is supplied.
+  The final missing mathematical ingredient is a theorem that arbitrarily
+  large concrete firing-sequence markings contain two comparable cuts in a
+  factored run.  The current library has all downstream bridges from that
+  statement to the WOFLAN theorem.
 
 - No proof-level diagnostics for unsoundness.
 

@@ -110,6 +110,12 @@ theorem sub_eq_zero_of_le {M N : Marking Place} (h : M ≤ N) :
   intro p
   exact Nat.sub_eq_zero_of_le (h p)
 
+theorem add_sub_of_le {M N : Marking Place} (h : M ≤ N) :
+    M + (N - M) = N := by
+  apply ext
+  intro p
+  exact Nat.add_sub_of_le (h p)
+
 theorem add_le_add {M₁ M₂ N₁ N₂ : Marking Place}
     (hM : M₁ ≤ M₂) (hN : N₁ ≤ N₂) :
     M₁ + N₁ ≤ M₂ + N₂ :=
