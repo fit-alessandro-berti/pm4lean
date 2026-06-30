@@ -1,4 +1,5 @@
 import Pm4Lean.Models.Petri.WFNet.WOFLAN.Boundedness
+import Pm4Lean.Models.Petri.WFNet.WOFLAN.Liveness.FromSound
 
 namespace Pm4Lean
 namespace Petri

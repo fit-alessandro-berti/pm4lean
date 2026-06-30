@@ -6,7 +6,9 @@ import Pm4Lean.Models.Petri.Semantics.Fire
 import Pm4Lean.Models.Petri.Semantics.Step
 import Pm4Lean.Models.Petri.Semantics.FiringSequence
 import Pm4Lean.Models.Petri.Semantics.Reachability
+import Pm4Lean.Models.Petri.Semantics.Monotonicity
 import Pm4Lean.Models.Petri.Semantics.SinkLemmas
+import Pm4Lean.Models.Petri.Behavior
 import Pm4Lean.Models.Petri.Structure.Node
 import Pm4Lean.Models.Petri.Structure.Path
 import Pm4Lean.Models.Petri.Structure.SourceSink

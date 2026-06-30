@@ -1,45 +1,37 @@
-import Pm4Lean.Models.Petri.WFNet.WOFLAN.Boundedness.Basic
+import Pm4Lean.Models.Petri.Behavior.Boundedness
+import Pm4Lean.Models.Petri.WFNet.WOFLAN.ShortCircuit.ProperCompletion
+import Pm4Lean.Models.Petri.WFNet.Soundness.Soundness
 
 namespace Pm4Lean
 namespace Petri
 
 /-- The original WF-net has a global token bound on markings reachable from
 its initial marking. -/
-def TokenBoundedReachableOriginal (W : WFNet) : Prop :=
-  ∃ k : Nat, ∀ M : W.Marking, Reachable W.net W.initial M →
-    ∀ p : W.net.Place, M p ≤ k
+abbrev TokenBoundedReachableOriginal (W : WFNet) : Prop :=
+  Bounded W.net W.initial
 
 /-- The original WF-net has a global bound on the total tokens over its place
 enumeration. -/
-def TokenSumBoundedReachableOriginal (W : WFNet) : Prop :=
+abbrev TokenSumBoundedReachableOriginal (W : WFNet) : Prop :=
   TokenSumBoundedReachable W.net W.initial
 
 theorem original_bounded_of_tokenSumBoundedReachableOriginal
     {W : WFNet}
     (hTokenSumBounded : TokenSumBoundedReachableOriginal W) :
-    TokenBoundedReachableOriginal W := by
-  obtain ⟨k, hBoundSum⟩ := hTokenSumBounded
-  exact ⟨k, fun M hReach p =>
-    Nat.le_trans
-      (Marking.le_tokenSumOn_of_complete
-        W.net.places W.net.places_complete M p)
-      (hBoundSum M hReach)⟩
+    TokenBoundedReachableOriginal W :=
+  bounded_of_tokenSumBoundedReachable hTokenSumBounded
 
 theorem tokenSumBoundedReachableOriginal_of_original_bounded
     {W : WFNet}
     (hBoundOriginal : TokenBoundedReachableOriginal W) :
-    TokenSumBoundedReachableOriginal W := by
-  obtain ⟨k, hBoundOriginalBy⟩ := hBoundOriginal
-  exact ⟨W.net.places.length * k, fun M hReach =>
-    Marking.tokenSumOn_le_length_mul_of_forall_le
-      W.net.places M k (fun p => hBoundOriginalBy M hReach p)⟩
+    TokenSumBoundedReachableOriginal W :=
+  tokenSumBoundedReachable_of_bounded hBoundOriginal
 
 theorem original_bounded_iff_tokenSumBoundedReachableOriginal
     {W : WFNet} :
     TokenBoundedReachableOriginal W ↔
       TokenSumBoundedReachableOriginal W :=
-  ⟨tokenSumBoundedReachableOriginal_of_original_bounded,
-    original_bounded_of_tokenSumBoundedReachableOriginal⟩
+  bounded_iff_tokenSumBoundedReachable
 
 theorem original_bounded_of_shortCircuit_bounded
     {W : WFNet}

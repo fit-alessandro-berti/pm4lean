@@ -1,5 +1,5 @@
 import Pm4Lean.Models.Petri.Basic.Marking.Support
-import Pm4Lean.Models.Petri.WFNet.WOFLAN.Liveness
+import Pm4Lean.Models.Petri.Semantics.Reachability
 
 namespace Pm4Lean
 namespace Petri
