@@ -7,6 +7,7 @@ module in `Pm4Lean/Conversion.lean`.
 -/
 import Pm4Lean.Models.Language
 import Pm4Lean.Models.Petri
-import Pm4Lean.Models.ProcessTree
 import Pm4Lean.Models.POWL
-import Pm4Lean.Models.BPMN
+import Pm4Lean.Models.POWL2
+-- import Pm4Lean.Models.ProcessTree
+-- import Pm4Lean.Models.BPMN

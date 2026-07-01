@@ -1,9 +1,10 @@
-import Pm4Lean.Models.Petri.Basic.Marking.Coordinates
-import Pm4Lean.Models.Petri.Semantics.TokenSum
-import Pm4Lean.Models.Petri.Behavior
-import Pm4Lean.Models.Petri.WFNet.Examples.SingleTransition
-import Pm4Lean.Models.Petri.WFNet.Behavior.EasySoundness
-import Pm4Lean.Models.Petri.WFNet.Behavior.RelaxedSoundness
 import Pm4Lean.Models.Petri.WFNet.Soundness.SoundnessImplications
-import Pm4Lean.Models.Petri.WFNet.WOFLAN.Liveness
-import Pm4Lean.Models.Petri.WFNet.WOFLAN.SoundnessViaShortCircuit
+import Pm4Lean.Models.Petri.WFNet.Construction.SilentTransition
+-- import Pm4Lean.Models.Petri.Basic.Marking.Coordinates
+-- import Pm4Lean.Models.Petri.Semantics.TokenSum
+-- import Pm4Lean.Models.Petri.Behavior
+-- import Pm4Lean.Models.Petri.WFNet.Examples.SingleTransition
+-- import Pm4Lean.Models.Petri.WFNet.Behavior.EasySoundness
+-- import Pm4Lean.Models.Petri.WFNet.Behavior.RelaxedSoundness
+-- import Pm4Lean.Models.Petri.WFNet.WOFLAN.Liveness
+-- import Pm4Lean.Models.Petri.WFNet.WOFLAN.SoundnessViaShortCircuit

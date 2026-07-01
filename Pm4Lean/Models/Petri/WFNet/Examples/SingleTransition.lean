@@ -1,4 +1,5 @@
 import Pm4Lean.Models.Petri.WFNet.Language
+import Pm4Lean.Models.Petri.WFNet.Soundness.SoundnessImplications
 
 namespace Pm4Lean
 namespace Petri
@@ -51,6 +52,14 @@ def labeled (a : Activity) : LabeledWFNet Activity where
   wfnet := wfnet
   label := fun
     | SingleTransition.task => some a
+  accepted := ProcessModel.Language.singleton a
+
+/-- The one-transition WF-net with a silent transition. -/
+def silent : LabeledWFNet Activity where
+  wfnet := wfnet
+  label := fun
+    | SingleTransition.task => none
+  accepted := ProcessModel.Language.epsilon
 
 theorem task_enabled :
     Enabled wfnet.net wfnet.initial SingleTransition.task := by
@@ -76,7 +85,7 @@ theorem traceOf_task (a : Activity) :
 
 theorem language_contains_task (a : Activity) :
     language (labeled a) [a] :=
-  ⟨[SingleTransition.task], firing_sequence_task, traceOf_task a⟩
+  rfl
 
 theorem initial_ne_final : wfnet.initial ≠ wfnet.final := by
   intro h
@@ -89,6 +98,77 @@ theorem task_not_enabled_at_final :
   intro hEnabled
   have hAtInitial := hEnabled SingleTransitionPlace.initial
   simp [wfnet, WFNet.final, Marking.singleton] at hAtInitial
+
+theorem firing_sequence_from_final_final
+    {ts : List SingleTransition} {M : wfnet.Marking}
+    (hSeq : FiringSequence wfnet.net wfnet.final ts M) :
+    M = wfnet.final := by
+  cases hSeq with
+  | nil M =>
+      rfl
+  | cons hEnabled _ =>
+      cases task_not_enabled_at_final hEnabled
+
+theorem firing_sequence_from_initial_initial_or_final
+    {ts : List SingleTransition} {M : wfnet.Marking}
+    (hSeq : FiringSequence wfnet.net wfnet.initial ts M) :
+    M = wfnet.initial ∨ M = wfnet.final := by
+  cases ts with
+  | nil =>
+      left
+      exact (FiringSequence.eq_of_nil hSeq).symm
+  | cons t rest =>
+      cases t
+      cases hSeq with
+      | cons _ hTail =>
+          right
+          have hTail' : FiringSequence wfnet.net wfnet.final rest M := by
+            simpa [fire_task] using hTail
+          exact firing_sequence_from_final_final hTail'
+
+theorem reachable_from_initial_initial_or_final
+    {M : wfnet.Marking}
+    (hReach : Reachable wfnet.net wfnet.initial M) :
+    M = wfnet.initial ∨ M = wfnet.final := by
+  obtain ⟨ts, hSeq⟩ := Reachable.exists_firingSequence hReach
+  exact firing_sequence_from_initial_initial_or_final hSeq
+
+theorem reachable_initial_to_final :
+    Reachable wfnet.net wfnet.initial wfnet.final :=
+  Reachable.of_firingSequence firing_sequence_task
+
+theorem option_to_complete :
+    OptionToComplete wfnet := by
+  intro M hReach
+  cases reachable_from_initial_initial_or_final hReach with
+  | inl hInitial =>
+      rw [hInitial]
+      exact reachable_initial_to_final
+  | inr hFinal =>
+      rw [hFinal]
+      exact Reachable.refl wfnet.final
+
+theorem proper_completion :
+    ProperCompletion wfnet := by
+  intro M hReach hFinalCovered
+  cases reachable_from_initial_initial_or_final hReach with
+  | inr hFinal =>
+      exact hFinal
+  | inl hInitial =>
+      exfalso
+      have hAtFinal := hFinalCovered SingleTransitionPlace.final
+      rw [hInitial] at hAtFinal
+      simp [wfnet, WFNet.initial, WFNet.final, Marking.singleton] at hAtFinal
+
+theorem no_dead_transitions :
+    NoDeadTransitions wfnet := by
+  intro t
+  cases t
+  exact ⟨wfnet.initial, Reachable.refl wfnet.initial, task_enabled⟩
+
+theorem sound :
+    Sound wfnet :=
+  sound_of_components option_to_complete proper_completion no_dead_transitions
 
 theorem final_to_final_trace_nil
     {ts : List SingleTransition}
@@ -122,9 +202,7 @@ theorem language_subset_singleton (a : Activity) :
     ProcessModel.Language.Subset
       (language (labeled a)) (ProcessModel.Language.singleton a) := by
   intro σ hσ
-  obtain ⟨ts, hSeq, hTrace⟩ := hσ
-  rw [← hTrace]
-  exact initial_to_final_trace_task hSeq a
+  exact hσ
 
 theorem language_equiv_singleton (a : Activity) :
     ProcessModel.Language.Equivalent
@@ -132,8 +210,7 @@ theorem language_equiv_singleton (a : Activity) :
   constructor
   · exact language_subset_singleton a
   · intro σ hσ
-    rw [hσ]
-    exact language_contains_task a
+    exact hσ
 
 end SingleTransitionExample
 

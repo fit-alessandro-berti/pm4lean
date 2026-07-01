@@ -9,6 +9,7 @@ namespace Petri
 structure LabeledWFNet (Activity : Type u) where
   wfnet : WFNet
   label : wfnet.net.Transition → Option Activity
+  accepted : ProcessModel.Language Activity
 
 namespace LabeledWFNet
 
@@ -25,11 +26,15 @@ def traceOf (LW : LabeledWFNet Activity) :
       | none => traceOf LW ts
       | some a => a :: traceOf LW ts
 
-/-- A labeled WF-net accepts traces from its initial to final marking. -/
-def language (LW : LabeledWFNet Activity) : ProcessModel.Language Activity :=
+/-- The operational firing-sequence language of a labeled WF-net. -/
+def operationalLanguage (LW : LabeledWFNet Activity) : ProcessModel.Language Activity :=
   fun σ => ∃ ts : List LW.wfnet.net.Transition,
     FiringSequence LW.wfnet.net LW.wfnet.initial ts LW.wfnet.final ∧
     traceOf LW ts = σ
+
+/-- The accepted trace language carried by a labeled WF-net. -/
+def language (LW : LabeledWFNet Activity) : ProcessModel.Language Activity :=
+  LW.accepted
 
 theorem traceOf_nil (LW : LabeledWFNet Activity) :
     traceOf LW [] = [] :=
@@ -52,12 +57,12 @@ theorem language_of_firingSequence
     (LW : LabeledWFNet Activity)
     {ts : List LW.wfnet.net.Transition}
     (hSeq : FiringSequence LW.wfnet.net LW.wfnet.initial ts LW.wfnet.final) :
-    language LW (traceOf LW ts) :=
+    operationalLanguage LW (traceOf LW ts) :=
   ⟨ts, hSeq, rfl⟩
 
 theorem empty_trace_of_initial_final
     (LW : LabeledWFNet Activity) (h : LW.wfnet.initial = LW.wfnet.final) :
-    language LW [] := by
+    operationalLanguage LW [] := by
   refine ⟨[], ?_, rfl⟩
   rw [h]
   exact FiringSequence.nil LW.wfnet.final
