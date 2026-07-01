@@ -140,14 +140,13 @@ theorem choiceGraph_empty_language_epsilon
   simp [POWL2.language, POWL2.choiceGraphLanguage]
   exact ⟨[], POWL2.ChoicePath.empty h, rfl⟩
 
-theorem choiceGraph_empty_language_witness_realized_by_firing
+theorem choiceGraph_empty_language_realized_by_firing
     (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
-    (h : graph.empty) :
-    ∃ _hLang : POWL2.language (POWL2.choiceGraph children graph) [],
-      Petri.LabeledWFNet.operationalLanguage
-        (target (POWL2.choiceGraph children graph)) [] := by
-  exact ⟨choiceGraph_empty_language_epsilon children graph h,
-    choiceGraph_empty_operational_epsilon children graph h⟩
+    (h : graph.empty)
+    (_hLang : POWL2.language (POWL2.choiceGraph children graph) []) :
+    Petri.LabeledWFNet.operationalLanguage
+      (target (POWL2.choiceGraph children graph)) [] :=
+  choiceGraph_empty_operational_epsilon children graph h
 
 theorem choiceGraph_start_root_mem
     (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)

@@ -76,6 +76,176 @@ theorem rawChildExit_mem
   simpa [childExit] using
     rawPlacesChildren_exit_mem children addr 0 i hRange
 
+theorem prefixTransition_nil (t : RawTransition) :
+    prefixTransition [] t = t := by
+  cases t
+  rfl
+
+theorem prefixTransition_append (left right : Address) (t : RawTransition) :
+    prefixTransition left (prefixTransition right t) =
+      prefixTransition (left ++ right) t := by
+  cases t
+  simp [prefixTransition, List.append_assoc]
+
+theorem prefixPlace_nil (q : RawPlace) :
+    prefixPlace [] q = q := by
+  cases q
+  rfl
+
+theorem prefixPlace_append (left right : Address) (q : RawPlace) :
+    prefixPlace left (prefixPlace right q) =
+      prefixPlace (left ++ right) q := by
+  cases q
+  simp [prefixPlace, List.append_assoc]
+
+theorem rawPlacesChildren_mem :
+    ∀ (children : List (POWL2 Activity)) (addr : Address) (start i : Nat)
+      (child : POWL2 Activity) (q : RawPlace),
+      POWL2.listGet? children i = some child →
+      q ∈ rawPlaces child (childAddr addr (start + i)) →
+      q ∈ rawPlacesChildren children addr start
+  | [], _, _, i, _, _, hGet, _ => by
+      cases i <;> simp [POWL2.listGet?] at hGet
+  | head :: rest, addr, start, 0, child, q, hGet, hMem => by
+      simp [POWL2.listGet?] at hGet
+      subst hGet
+      simpa [rawPlacesChildren] using Or.inl hMem
+  | head :: rest, addr, start, Nat.succ i, child, q, hGet, hMem => by
+      have hMem' :
+          q ∈ rawPlaces child (childAddr addr ((start + 1) + i)) := by
+        simpa [childAddr, Nat.succ_eq_add_one, Nat.add_assoc,
+          Nat.add_comm, Nat.add_left_comm] using hMem
+      have hRec :
+          q ∈ rawPlacesChildren rest addr (start + 1) :=
+        rawPlacesChildren_mem rest addr (start + 1) i child q hGet hMem'
+      simpa [rawPlacesChildren] using Or.inr hRec
+
+theorem rawTransitionsChildren_mem :
+    ∀ (children : List (POWL2 Activity)) (addr : Address) (start i : Nat)
+      (child : POWL2 Activity) (t : RawTransition),
+      POWL2.listGet? children i = some child →
+      t ∈ rawTransitions child (childAddr addr (start + i)) →
+      t ∈ rawTransitionsChildren children addr start
+  | [], _, _, i, _, _, hGet, _ => by
+      cases i <;> simp [POWL2.listGet?] at hGet
+  | head :: rest, addr, start, 0, child, t, hGet, hMem => by
+      simp [POWL2.listGet?] at hGet
+      subst hGet
+      simpa [rawTransitionsChildren] using Or.inl hMem
+  | head :: rest, addr, start, Nat.succ i, child, t, hGet, hMem => by
+      have hMem' :
+          t ∈ rawTransitions child (childAddr addr ((start + 1) + i)) := by
+        simpa [childAddr, Nat.succ_eq_add_one, Nat.add_assoc,
+          Nat.add_comm, Nat.add_left_comm] using hMem
+      have hRec :
+          t ∈ rawTransitionsChildren rest addr (start + 1) :=
+        rawTransitionsChildren_mem rest addr (start + 1) i child t hGet hMem'
+      simpa [rawTransitionsChildren] using Or.inr hRec
+
+theorem loop_body_transition_mem
+    (body redo : POWL2 Activity) (addr : Address) {t : RawTransition}
+    (hMem : t ∈ rawTransitions body (childAddr addr 0)) :
+    t ∈ rawTransitions (POWL2.loop body redo) addr := by
+  simpa [rawTransitions] using
+    (List.mem_append_right
+      [ transition addr TransitionKind.loopStart,
+        transition addr TransitionKind.loopExit,
+        transition addr TransitionKind.loopRedo,
+        transition addr TransitionKind.loopBack ]
+      (List.mem_append_left (rawTransitions redo (childAddr addr 1)) hMem))
+
+theorem loop_redo_transition_child_mem
+    (body redo : POWL2 Activity) (addr : Address) {t : RawTransition}
+    (hMem : t ∈ rawTransitions redo (childAddr addr 1)) :
+    t ∈ rawTransitions (POWL2.loop body redo) addr := by
+  simpa [rawTransitions] using
+    (List.mem_append_right
+      [ transition addr TransitionKind.loopStart,
+        transition addr TransitionKind.loopExit,
+        transition addr TransitionKind.loopRedo,
+        transition addr TransitionKind.loopBack ]
+      (List.mem_append_right (rawTransitions body (childAddr addr 0)) hMem))
+
+theorem loop_body_place_mem
+    (body redo : POWL2 Activity) (addr : Address) {q : RawPlace}
+    (hMem : q ∈ rawPlaces body (childAddr addr 0)) :
+    q ∈ rawPlaces (POWL2.loop body redo) addr := by
+  simp [rawPlaces]
+  exact Or.inr (Or.inr (Or.inl hMem))
+
+theorem loop_redo_place_mem
+    (body redo : POWL2 Activity) (addr : Address) {q : RawPlace}
+    (hMem : q ∈ rawPlaces redo (childAddr addr 1)) :
+    q ∈ rawPlaces (POWL2.loop body redo) addr := by
+  simp [rawPlaces]
+  exact Or.inr (Or.inr (Or.inr hMem))
+
+theorem partialOrder_child_place_mem
+    (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
+    (addr : Address) {i : Nat} {child : POWL2 Activity}
+    {q : RawPlace}
+    (hGet : POWL2.listGet? children i = some child)
+    (hMem : q ∈ rawPlaces child (childAddr addr i)) :
+    q ∈ rawPlaces (POWL2.partialOrder children order) addr := by
+  have hChild :
+      q ∈ rawPlacesChildren children addr 0 :=
+    rawPlacesChildren_mem children addr 0 i child q hGet (by
+      simpa using hMem)
+  simp [rawPlaces]
+  exact Or.inr hChild
+
+theorem choiceGraph_child_place_mem
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    (addr : Address) {i : Nat} {child : POWL2 Activity}
+    {q : RawPlace}
+    (hGet : POWL2.listGet? children i = some child)
+    (hMem : q ∈ rawPlaces child (childAddr addr i)) :
+    q ∈ rawPlaces (POWL2.choiceGraph children graph) addr := by
+  have hChild :
+      q ∈ rawPlacesChildren children addr 0 :=
+    rawPlacesChildren_mem children addr 0 i child q hGet (by
+      simpa using hMem)
+  simp [rawPlaces]
+  exact Or.inr (Or.inr hChild)
+
+theorem partialOrder_child_transition_mem
+    (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
+    (addr : Address) {i : Nat} {child : POWL2 Activity}
+    {t : RawTransition}
+    (hGet : POWL2.listGet? children i = some child)
+    (hMem : t ∈ rawTransitions child (childAddr addr i)) :
+    t ∈ rawTransitions (POWL2.partialOrder children order) addr := by
+  have hChild :
+      t ∈ rawTransitionsChildren children addr 0 :=
+    rawTransitionsChildren_mem children addr 0 i child t hGet (by
+      simpa using hMem)
+  simpa [rawTransitions] using
+    (List.mem_append_right
+      (transitionsForPartialOrder addr children.length) hChild)
+
+theorem choiceGraph_child_transition_mem
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    (addr : Address) {i : Nat} {child : POWL2 Activity}
+    {t : RawTransition}
+    (hGet : POWL2.listGet? children i = some child)
+    (hMem : t ∈ rawTransitions child (childAddr addr i)) :
+    t ∈ rawTransitions (POWL2.choiceGraph children graph) addr := by
+  have hChild :
+      t ∈ rawTransitionsChildren children addr 0 :=
+    rawTransitionsChildren_mem children addr 0 i child t hGet (by
+      simpa using hMem)
+  classical
+  let front : List RawTransition :=
+    (if graph.empty then [transition addr TransitionKind.choiceEmpty] else []) ++
+      (indicesWhere children.length graph.start).map
+        (fun i => transition addr (TransitionKind.choiceStart i)) ++
+      (edgesWhere children.length graph.edge).map
+        (fun edge => transition addr (TransitionKind.choiceEdge edge.1 edge.2)) ++
+      (indicesWhere children.length graph.finish).map
+        (fun i => transition addr (TransitionKind.choiceEnd i))
+  simpa [rawTransitions, front] using
+    (List.mem_append_right front hChild)
+
 theorem loop_body_entry_mem
     (body redo : POWL2 Activity) (addr : Address) :
     childEntry addr 0 ∈ rawPlaces (POWL2.loop body redo) addr := by

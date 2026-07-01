@@ -63,6 +63,12 @@ def poDone (addr : Address) (i : Nat) : RawPlace :=
 def transition (addr : Address) (kind : TransitionKind) : RawTransition :=
   ⟨addr, kind⟩
 
+def prefixPlace (pref : Address) (q : RawPlace) : RawPlace :=
+  ⟨pref ++ q.addr, q.kind⟩
+
+def prefixTransition (pref : Address) (t : RawTransition) : RawTransition :=
+  ⟨pref ++ t.addr, t.kind⟩
+
 def rawMark (places : List RawPlace) : RawPlace → Nat :=
   fun p => if p ∈ places then 1 else 0
 

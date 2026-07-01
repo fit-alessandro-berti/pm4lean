@@ -30,6 +30,30 @@ theorem append {N : Net} {M M' M'' : N.Marking}
       simp
       exact FiringSequence.cons hEnabled (ih hys)
 
+theorem map
+    {N₁ N₂ : Net}
+    (mapMarking : N₁.Marking → N₂.Marking)
+    (mapTransition : N₁.Transition → N₂.Transition)
+    (hEnabled :
+      ∀ {M : N₁.Marking} {t : N₁.Transition},
+        Enabled N₁ M t →
+          Enabled N₂ (mapMarking M) (mapTransition t))
+    (hFire :
+      ∀ (M : N₁.Marking) (t : N₁.Transition),
+        mapMarking (fire N₁ M t) =
+          fire N₂ (mapMarking M) (mapTransition t))
+    {M M' : N₁.Marking} {ts : List N₁.Transition}
+    (hSeq : FiringSequence N₁ M ts M') :
+    FiringSequence N₂ (mapMarking M) (ts.map mapTransition)
+      (mapMarking M') := by
+  induction hSeq with
+  | nil M =>
+      exact FiringSequence.nil (mapMarking M)
+  | cons hStep hTail ih =>
+      simp
+      refine FiringSequence.cons (hEnabled hStep) ?_
+      simpa [hFire] using ih
+
 theorem split_append {N : Net} {M M'' : N.Marking}
     {xs ys : List N.Transition}
     (h : FiringSequence N M (xs ++ ys) M'') :

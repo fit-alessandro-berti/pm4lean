@@ -7,6 +7,30 @@ namespace POWL2
 
 variable {Activity : Type u}
 
+theorem listGet?_mem {α : Type u} {xs : List α} {i : Nat} {x : α}
+    (h : listGet? xs i = some x) :
+    x ∈ xs := by
+  induction xs generalizing i with
+  | nil =>
+      cases i <;> simp [listGet?] at h
+  | cons head tail ih =>
+      cases i with
+      | zero =>
+          simp [listGet?] at h
+          subst h
+          simp
+      | succ i =>
+          simp
+          exact Or.inr (ih h)
+
+theorem exists_listGet?_of_lt {α : Type u} :
+    ∀ {xs : List α} {i : Nat}, i < xs.length → ∃ x, listGet? xs i = some x
+  | [], i, h => False.elim (Nat.not_lt_zero i h)
+  | x :: _, 0, _ => ⟨x, rfl⟩
+  | _ :: xs, Nat.succ i, h =>
+      exists_listGet?_of_lt (xs := xs) (i := i)
+        (Nat.succ_lt_succ_iff.mp h)
+
 theorem choiceGraph_child_wellFormed
     {children : List (POWL2 Activity)} {graph : POWL2ChoiceGraph}
     (h : WellFormed (choiceGraph children graph))
@@ -60,6 +84,25 @@ theorem choicePath_indices_in_range
   | empty => cases hMem
   | start hStart hRest =>
       exact choicePathFrom_indices_in_range hGraph hRest j hMem
+
+theorem choicePath_index_has_child
+    {children : List (POWL2 Activity)} {graph : POWL2ChoiceGraph}
+    {path : List Nat}
+    (hGraph : POWL2ChoiceGraph.WellFormed children.length graph)
+    (hPath : ChoicePath graph path)
+    {i : Nat} (hMem : i ∈ path) :
+    ∃ child, listGet? children i = some child := by
+  exact exists_listGet?_of_lt
+    (choicePath_indices_in_range hGraph hPath i hMem)
+
+theorem choiceGraph_path_child_wellFormed
+    {children : List (POWL2 Activity)} {graph : POWL2ChoiceGraph}
+    (h : WellFormed (choiceGraph children graph))
+    {path : List Nat} (_hPath : ChoicePath graph path)
+    {i : Nat} (_hMem : i ∈ path)
+    {child : POWL2 Activity} (hGet : listGet? children i = some child) :
+    WellFormed child :=
+  choiceGraph_child_wellFormed h (listGet?_mem hGet)
 
 theorem partialOrder_child_wellFormed
     {children : List (POWL2 Activity)} {order : Nat → Nat → Prop}

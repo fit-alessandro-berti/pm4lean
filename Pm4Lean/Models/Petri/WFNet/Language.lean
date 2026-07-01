@@ -53,6 +53,19 @@ theorem traceOf_cons_visible
     traceOf LW (t :: ts) = a :: traceOf LW ts := by
   simp [traceOf, h]
 
+theorem traceOf_map
+    (source target : LabeledWFNet Activity)
+    (mapTransition :
+      source.wfnet.net.Transition → target.wfnet.net.Transition)
+    (hLabel :
+      ∀ t, target.label (mapTransition t) = source.label t)
+    (ts : List source.wfnet.net.Transition) :
+    traceOf target (ts.map mapTransition) = traceOf source ts := by
+  induction ts with
+  | nil => rfl
+  | cons t ts ih =>
+      simp [traceOf, hLabel t, ih]
+
 theorem traceOf_append
     (LW : LabeledWFNet Activity)
     (xs ys : List LW.wfnet.net.Transition) :
@@ -78,6 +91,36 @@ theorem language_of_firingSequence_append
     operationalLanguage LW (traceOf LW xs ++ traceOf LW ys) := by
   refine ⟨xs ++ ys, FiringSequence.append hxs hys, ?_⟩
   exact traceOf_append LW xs ys
+
+theorem operationalLanguage_of_map
+    (source target : LabeledWFNet Activity)
+    (mapMarking :
+      source.wfnet.net.Marking → target.wfnet.net.Marking)
+    (mapTransition :
+      source.wfnet.net.Transition → target.wfnet.net.Transition)
+    (hInitial : mapMarking source.wfnet.initial = target.wfnet.initial)
+    (hFinal : mapMarking source.wfnet.final = target.wfnet.final)
+    (hEnabled :
+      ∀ {M : source.wfnet.net.Marking}
+        {t : source.wfnet.net.Transition},
+        Enabled source.wfnet.net M t →
+          Enabled target.wfnet.net (mapMarking M) (mapTransition t))
+    (hFire :
+      ∀ (M : source.wfnet.net.Marking)
+        (t : source.wfnet.net.Transition),
+        mapMarking (fire source.wfnet.net M t) =
+          fire target.wfnet.net (mapMarking M) (mapTransition t))
+    (hLabel :
+      ∀ t, target.label (mapTransition t) = source.label t)
+    {σ : ProcessModel.Trace Activity}
+    (h : operationalLanguage source σ) :
+    operationalLanguage target σ := by
+  rcases h with ⟨ts, hSeq, hTrace⟩
+  refine ⟨ts.map mapTransition, ?_, ?_⟩
+  · rw [← hInitial, ← hFinal]
+    exact FiringSequence.map mapMarking mapTransition hEnabled hFire hSeq
+  · rw [traceOf_map source target mapTransition hLabel ts]
+    exact hTrace
 
 theorem empty_trace_of_initial_final
     (LW : LabeledWFNet Activity) (h : LW.wfnet.initial = LW.wfnet.final) :

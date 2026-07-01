@@ -61,6 +61,26 @@ noncomputable def language : POWL2 Activity → Language Activity
   | partialOrder children order =>
       Language.partialOrder (children.map language) order
 
+theorem tau_language :
+    language (Activity := Activity) tau = Language.epsilon :=
+  by simp [language]
+
+theorem activity_language (a : Activity) :
+    language (activity a) = Language.singleton a :=
+  by simp [language]
+
+theorem loop_language (body redo : POWL2 Activity) :
+    language (loop body redo) =
+      Language.seq (language body)
+        (Language.Star (Language.seq (language redo) (language body))) :=
+  by simp [language]
+
+theorem choiceGraph_language
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph) :
+    language (choiceGraph children graph) =
+      choiceGraphLanguage (children.map language) graph :=
+  by simp [language]
+
 theorem partialOrder_language
     (children : List (POWL2 Activity)) (order : Nat → Nat → Prop) :
     language (partialOrder children order) =

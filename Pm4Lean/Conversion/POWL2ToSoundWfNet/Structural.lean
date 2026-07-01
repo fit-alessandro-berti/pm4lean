@@ -136,7 +136,7 @@ theorem language_eq_operational (p : POWL2 Activity) :
           (accepted₂ := (target p).accepted) ts
     exact hEq.trans hTrace
 
-theorem language_realized_by_firing
+theorem accepted_language_realized_by_firing
     (p : POWL2 Activity) {σ : Trace Activity}
     (h : Petri.LabeledWFNet.language (target p) σ) :
     ∃ ts : List (target p).wfnet.net.Transition,

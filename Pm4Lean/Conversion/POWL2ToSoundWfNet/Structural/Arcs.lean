@@ -97,6 +97,66 @@ def rawLabel (p : POWL2 Activity) (t : RawTransition) : Option Activity :=
   | TransitionKind.atom, some (POWL2.activity a) => some a
   | _, _ => none
 
+theorem childAt_loop_body_prefix
+    (body redo : POWL2 Activity) (addr : Address) :
+    childAt (POWL2.loop body redo) (0 :: addr) = childAt body addr := by
+  rfl
+
+theorem childAt_loop_redo_prefix
+    (body redo : POWL2 Activity) (addr : Address) :
+    childAt (POWL2.loop body redo) (1 :: addr) = childAt redo addr := by
+  rfl
+
+theorem childAt_partialOrder_child_prefix
+    (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
+    {i : Nat} {child : POWL2 Activity} (addr : Address)
+    (hGet : POWL2.listGet? children i = some child) :
+    childAt (POWL2.partialOrder children order) (i :: addr) =
+      childAt child addr := by
+  simp [childAt, hGet]
+
+theorem childAt_choiceGraph_child_prefix
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} {child : POWL2 Activity} (addr : Address)
+    (hGet : POWL2.listGet? children i = some child) :
+    childAt (POWL2.choiceGraph children graph) (i :: addr) =
+      childAt child addr := by
+  simp [childAt, hGet]
+
+theorem rawLabel_loop_body_prefix
+    (body redo : POWL2 Activity) (t : RawTransition) :
+    rawLabel (POWL2.loop body redo) (prefixTransition [0] t) =
+      rawLabel body t := by
+  cases t
+  simp [rawLabel, prefixTransition, childAt_loop_body_prefix]
+
+theorem rawLabel_loop_redo_prefix
+    (body redo : POWL2 Activity) (t : RawTransition) :
+    rawLabel (POWL2.loop body redo) (prefixTransition [1] t) =
+      rawLabel redo t := by
+  cases t
+  simp [rawLabel, prefixTransition, childAt_loop_redo_prefix]
+
+theorem rawLabel_partialOrder_child_prefix
+    (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
+    {i : Nat} {child : POWL2 Activity} (t : RawTransition)
+    (hGet : POWL2.listGet? children i = some child) :
+    rawLabel (POWL2.partialOrder children order) (prefixTransition [i] t) =
+      rawLabel child t := by
+  cases t
+  simp [rawLabel, prefixTransition, childAt_partialOrder_child_prefix,
+    hGet]
+
+theorem rawLabel_choiceGraph_child_prefix
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} {child : POWL2 Activity} (t : RawTransition)
+    (hGet : POWL2.listGet? children i = some child) :
+    rawLabel (POWL2.choiceGraph children graph) (prefixTransition [i] t) =
+      rawLabel child t := by
+  cases t
+  simp [rawLabel, prefixTransition, childAt_choiceGraph_child_prefix,
+    hGet]
+
 def compiled (p : POWL2 Activity) : POWL2 Activity :=
   normalize p
 
