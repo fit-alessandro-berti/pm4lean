@@ -1,4 +1,4 @@
-import Pm4Lean.Models.POWL.Semantics
+import Pm4Lean.Models.Language
 import Pm4Lean.Models.POWL2.Basic
 
 namespace Pm4Lean
@@ -54,35 +54,12 @@ def choiceGraphLanguage
 noncomputable def language : POWL2 Activity → Language Activity
   | tau => Language.epsilon
   | activity a => Language.singleton a
-  | ofPOWL p => POWL.language p
-  | xorMany children =>
-      choiceGraphLanguage (children.map language) (xorChoiceGraph children.length)
-  | sequence children =>
-      Language.partialOrder (children.map language)
-        (sequenceOrder children.length)
-  | parallel children =>
-      Language.partialOrder (children.map language) parallelOrder
   | loop body redo =>
       Language.seq (language body)
         (Language.Star (Language.seq (language redo) (language body)))
   | choiceGraph children graph => choiceGraphLanguage (children.map language) graph
   | partialOrder children order =>
       Language.partialOrder (children.map language) order
-
-theorem ofPOWL_language (p : POWL Activity) :
-    language (ofPOWL p) = POWL.language p :=
-  by simp [language]
-
-theorem sequence_language (children : List (POWL2 Activity)) :
-    language (sequence children) =
-      Language.partialOrder (children.map language)
-        (sequenceOrder children.length) :=
-  by simp [language]
-
-theorem parallel_language (children : List (POWL2 Activity)) :
-    language (parallel children) =
-    Language.partialOrder (children.map language) parallelOrder :=
-  by simp [language]
 
 theorem partialOrder_language
     (children : List (POWL2 Activity)) (order : Nat → Nat → Prop) :

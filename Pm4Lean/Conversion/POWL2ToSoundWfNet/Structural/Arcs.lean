@@ -9,7 +9,6 @@ variable {Activity : Type u}
 namespace Structural
 
 def lastChildIndex (n : Nat) : Nat := n - 1
-
 noncomputable def poBeginPre
     (addr : Address) (order : Nat → Nat → Prop) (n i : Nat) :
     List RawPlace :=
@@ -32,21 +31,8 @@ noncomputable def rawPre :
     POWL2 Activity → RawTransition → RawPlace → Nat
   | p, t, place =>
       match p, t.kind with
-      | POWL2.ofPOWL _, TransitionKind.atom => rawMark [entry t.addr] place
-      | POWL2.xorMany _, TransitionKind.choiceStart _ => rawMark [entry t.addr] place
-      | POWL2.xorMany _, TransitionKind.choiceEnd i => rawMark [childExit t.addr i] place
       | POWL2.tau, TransitionKind.atom => rawMark [entry t.addr] place
       | POWL2.activity _, TransitionKind.atom => rawMark [entry t.addr] place
-      | POWL2.sequence _, TransitionKind.seqStart => rawMark [entry t.addr] place
-      | POWL2.sequence _, TransitionKind.seqNext i => rawMark [childExit t.addr i] place
-      | POWL2.sequence children, TransitionKind.seqEnd =>
-          rawMark [childExit t.addr (lastChildIndex children.length)] place
-      | POWL2.parallel _, TransitionKind.poFork => rawMark [entry t.addr] place
-      | POWL2.parallel children, TransitionKind.poBegin i =>
-          rawMark (poBeginPre t.addr POWL2.parallelOrder children.length i) place
-      | POWL2.parallel _, TransitionKind.poComplete i => rawMark [childExit t.addr i] place
-      | POWL2.parallel children, TransitionKind.poJoin =>
-          rawMark ((List.range children.length).map (poDone t.addr)) place
       | POWL2.partialOrder _ _, TransitionKind.poFork => rawMark [entry t.addr] place
       | POWL2.partialOrder children order, TransitionKind.poBegin i =>
           rawMark (poBeginPre t.addr order children.length i) place
@@ -67,28 +53,8 @@ noncomputable def rawPost :
     POWL2 Activity → RawTransition → RawPlace → Nat
   | p, t, place =>
       match p, t.kind with
-      | POWL2.ofPOWL _, TransitionKind.atom => rawMark [exit t.addr] place
-      | POWL2.xorMany _, TransitionKind.choiceStart i => rawMark [childEntry t.addr i] place
-      | POWL2.xorMany _, TransitionKind.choiceEnd _ => rawMark [exit t.addr] place
       | POWL2.tau, TransitionKind.atom => rawMark [exit t.addr] place
       | POWL2.activity _, TransitionKind.atom => rawMark [exit t.addr] place
-      | POWL2.sequence children, TransitionKind.seqStart =>
-          rawMark (if children.length = 0 then [exit t.addr] else [childEntry t.addr 0]) place
-      | POWL2.sequence _, TransitionKind.seqNext i => rawMark [childEntry t.addr (i + 1)] place
-      | POWL2.sequence _, TransitionKind.seqEnd => rawMark [exit t.addr] place
-      | POWL2.parallel children, TransitionKind.poFork =>
-          rawMark
-            (if children.length = 0 then
-              [exit t.addr]
-            else
-              (indicesWhere children.length
-                (fun i => ¬ (∃ j, j < children.length ∧ POWL2.parallelOrder j i))).map
-                (poReady t.addr))
-            place
-      | POWL2.parallel _, TransitionKind.poBegin i => rawMark [childEntry t.addr i] place
-      | POWL2.parallel children, TransitionKind.poComplete i =>
-          rawMark (poCompletePost t.addr POWL2.parallelOrder children.length i) place
-      | POWL2.parallel _, TransitionKind.poJoin => rawMark [exit t.addr] place
       | POWL2.partialOrder children order, TransitionKind.poFork =>
           rawMark
             (if children.length = 0 then
@@ -114,19 +80,6 @@ noncomputable def rawPost :
 
 def childAt : POWL2 Activity → Address → Option (POWL2 Activity)
   | p, [] => some p
-  | POWL2.ofPOWL _, _ :: _ => none
-  | POWL2.xorMany children, i :: rest =>
-      match POWL2.listGet? children i with
-      | some child => childAt child rest
-      | none => none
-  | POWL2.sequence children, i :: rest =>
-      match POWL2.listGet? children i with
-      | some child => childAt child rest
-      | none => none
-  | POWL2.parallel children, i :: rest =>
-      match POWL2.listGet? children i with
-      | some child => childAt child rest
-      | none => none
   | POWL2.partialOrder children _, i :: rest =>
       match POWL2.listGet? children i with
       | some child => childAt child rest

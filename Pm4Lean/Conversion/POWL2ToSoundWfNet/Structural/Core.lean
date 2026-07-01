@@ -24,9 +24,6 @@ deriving DecidableEq, Repr
 
 inductive TransitionKind where
   | atom
-  | seqStart
-  | seqNext : Nat → TransitionKind
-  | seqEnd
   | poFork
   | poBegin : Nat → TransitionKind
   | poComplete : Nat → TransitionKind
@@ -102,22 +99,9 @@ noncomputable def edgesWhere
     (n : Nat) (p : Nat → Nat → Prop) : List (Nat × Nat) :=
   filterProp (pairsUpTo n) (fun edge => p edge.1 edge.2)
 
-def ofPOWL : POWL Activity → POWL2 Activity
-  | POWL.tau => POWL2.tau
-  | POWL.activity a => POWL2.activity a
-  | POWL.xor l r => POWL2.xorMany [ofPOWL l, ofPOWL r]
-  | POWL.loop body redo => POWL2.loop (ofPOWL body) (ofPOWL redo)
-  | POWL.partialOrder children order =>
-      POWL2.partialOrder (children.map ofPOWL) order
-
 def normalize : POWL2 Activity → POWL2 Activity
   | POWL2.tau => POWL2.tau
   | POWL2.activity a => POWL2.activity a
-  | POWL2.ofPOWL p => ofPOWL p
-  | POWL2.xorMany children =>
-      POWL2.choiceGraph (children.map normalize) (POWL2.xorChoiceGraph children.length)
-  | POWL2.sequence children => POWL2.sequence (children.map normalize)
-  | POWL2.parallel children => POWL2.parallel (children.map normalize)
   | POWL2.loop body redo => POWL2.loop (normalize body) (normalize redo)
   | POWL2.choiceGraph children graph =>
       POWL2.choiceGraph (children.map normalize) graph
@@ -129,14 +113,6 @@ mutual
       POWL2 Activity → Address → List RawPlace
     | POWL2.tau, addr => [entry addr, exit addr]
     | POWL2.activity _, addr => [entry addr, exit addr]
-    | POWL2.ofPOWL _, addr => [entry addr, exit addr]
-    | POWL2.xorMany children, addr =>
-        [entry addr, exit addr] ++ rawPlacesChildren children addr 0
-    | POWL2.sequence children, addr =>
-        [entry addr, exit addr] ++ rawPlacesChildren children addr 0
-    | POWL2.parallel children, addr =>
-        placesForPartialOrder addr children.length ++
-          rawPlacesChildren children addr 0
     | POWL2.loop body redo, addr =>
         [entry addr, exit addr] ++
           rawPlaces body (childAddr addr 0) ++
@@ -160,25 +136,6 @@ mutual
       POWL2 Activity → Address → List RawTransition
     | POWL2.tau, addr => [transition addr TransitionKind.atom]
     | POWL2.activity _, addr => [transition addr TransitionKind.atom]
-    | POWL2.ofPOWL _, addr => [transition addr TransitionKind.atom]
-    | POWL2.xorMany children, addr =>
-        (List.range children.length).map
-          (fun i => transition addr (TransitionKind.choiceStart i)) ++
-        (List.range children.length).map
-          (fun i => transition addr (TransitionKind.choiceEnd i)) ++
-        rawTransitionsChildren children addr 0
-    | POWL2.sequence children, addr =>
-        (if children.length = 0 then
-          [transition addr TransitionKind.seqStart]
-        else
-          [transition addr TransitionKind.seqStart] ++
-            (List.range (children.length - 1)).map
-              (fun i => transition addr (TransitionKind.seqNext i)) ++
-            [transition addr TransitionKind.seqEnd]) ++
-          rawTransitionsChildren children addr 0
-    | POWL2.parallel children, addr =>
-        transitionsForPartialOrder addr children.length ++
-          rawTransitionsChildren children addr 0
     | POWL2.loop body redo, addr =>
         [ transition addr TransitionKind.loopStart,
           transition addr TransitionKind.loopExit,

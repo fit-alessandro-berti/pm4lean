@@ -1,8 +1,4 @@
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.Atomic
-import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.OfPOWL
-import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.XorMany
-import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.Sequence
-import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.Parallel
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.Loop
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.PartialOrder
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.ChoiceGraph
