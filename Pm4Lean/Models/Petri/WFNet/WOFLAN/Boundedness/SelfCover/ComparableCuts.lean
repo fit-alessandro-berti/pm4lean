@@ -15,14 +15,10 @@ theorem localFactoredRunCutSelfCover_of_comparableCutsInRun
     LocalFactoredRunCutSelfCover W := by
   obtain ⟨pref, loop, suffix, Mend, M, M',
     hRun, hPref, hPrefLoop, hLe, hNe⟩ := hCover
-  obtain ⟨Mcut, hPrefCut, hLoop⟩ :=
-    FiringSequence.split_append hPrefLoop
-  have hMcut : Mcut = M :=
-    FiringSequence.deterministic hPrefCut hPref
   exact ⟨pref, loop, suffix, Mend, M, M',
     hRun,
     hPref,
-    by simpa [hMcut] using hLoop,
+    FiringSequence.between_prefixes hPref hPrefLoop,
     hLe,
     hNe⟩
 

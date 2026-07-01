@@ -71,6 +71,17 @@ theorem deterministic {N : Net} {M M₁ M₂ : N.Marking}
       | cons _ hTail₂ =>
           exact ih hTail₂
 
+theorem between_prefixes {N : Net} {M Mx Mxy : N.Marking}
+    {xs ys : List N.Transition}
+    (hPrefix : FiringSequence N M xs Mx)
+    (hPrefixLoop : FiringSequence N M (xs ++ ys) Mxy) :
+    FiringSequence N Mx ys Mxy := by
+  obtain ⟨Mcut, hPrefixCut, hLoop⟩ :=
+    split_append hPrefixLoop
+  have hMcut : Mcut = Mx :=
+    deterministic hPrefixCut hPrefix
+  simpa [hMcut] using hLoop
+
 end FiringSequence
 end Petri
 end Pm4Lean
