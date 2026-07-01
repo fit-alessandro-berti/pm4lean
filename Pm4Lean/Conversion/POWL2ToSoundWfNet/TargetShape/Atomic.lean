@@ -30,7 +30,7 @@ theorem tau_atom_consumes_target_entry :
     (target p).wfnet.net.pre t q = 1 := by
   simp [transitionOf, placeOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
-    Structural.rawPre, Structural.rawMark, Structural.entry,
+    Structural.rawPre, Structural.rawPreFor, Structural.rawMark, Structural.entry,
     Structural.transition]
 
 theorem tau_atom_produces_target_exit :
@@ -42,7 +42,7 @@ theorem tau_atom_produces_target_exit :
     (target p).wfnet.net.post t q = 1 := by
   simp [transitionOf, placeOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
-    Structural.rawPost, Structural.rawMark, Structural.exit,
+    Structural.rawPost, Structural.rawPostFor, Structural.rawMark, Structural.exit,
     Structural.transition]
 
 theorem tau_atom_pre_singleton :
@@ -56,7 +56,7 @@ theorem tau_atom_pre_singleton :
   cases q
   simp [transitionOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
-    Structural.rawPre, Structural.rawMark, Structural.entry,
+    Structural.rawPre, Structural.rawPreFor, Structural.rawMark, Structural.entry,
     Structural.transition, Petri.Marking.singleton]
 
 theorem tau_atom_post_singleton :
@@ -70,7 +70,7 @@ theorem tau_atom_post_singleton :
   cases q
   simp [transitionOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
-    Structural.rawPost, Structural.rawMark, Structural.exit,
+    Structural.rawPost, Structural.rawPostFor, Structural.rawMark, Structural.exit,
     Structural.transition, Petri.Marking.singleton]
 
 theorem tau_operational_epsilon :
@@ -117,7 +117,7 @@ theorem activity_atom_pre_singleton (a : Activity) :
   cases q
   simp [transitionOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
-    Structural.rawPre, Structural.rawMark, Structural.entry,
+    Structural.rawPre, Structural.rawPreFor, Structural.rawMark, Structural.entry,
     Structural.transition, Petri.Marking.singleton]
 
 theorem activity_atom_post_singleton (a : Activity) :
@@ -131,7 +131,7 @@ theorem activity_atom_post_singleton (a : Activity) :
   cases q
   simp [transitionOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
-    Structural.rawPost, Structural.rawMark, Structural.exit,
+    Structural.rawPost, Structural.rawPostFor, Structural.rawMark, Structural.exit,
     Structural.transition, Petri.Marking.singleton]
 
 theorem activity_operational_singleton (a : Activity) :

@@ -95,7 +95,7 @@ theorem choiceGraph_empty_pre_singleton
   cases q
   simp [transitionOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
-    Structural.rawPre, Structural.rawMark, Structural.entry,
+    Structural.rawPre, Structural.rawPreFor, Structural.rawMark, Structural.entry,
     Structural.transition, Petri.Marking.singleton]
 
 theorem choiceGraph_empty_post_singleton
@@ -111,7 +111,7 @@ theorem choiceGraph_empty_post_singleton
   cases q
   simp [transitionOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
-    Structural.rawPost, Structural.rawMark, Structural.exit,
+    Structural.rawPost, Structural.rawPostFor, Structural.rawMark, Structural.exit,
     Structural.transition, Petri.Marking.singleton]
 
 theorem choiceGraph_empty_operational_epsilon

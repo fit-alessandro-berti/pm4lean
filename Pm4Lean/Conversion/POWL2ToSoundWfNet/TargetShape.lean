@@ -1,4 +1,5 @@
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.Atomic
+import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.Embedding
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.Loop
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.PartialOrder
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape.ChoiceGraph

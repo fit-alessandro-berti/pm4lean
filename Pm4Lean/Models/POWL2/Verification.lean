@@ -31,6 +31,19 @@ theorem exists_listGet?_of_lt {α : Type u} :
       exists_listGet?_of_lt (xs := xs) (i := i)
         (Nat.succ_lt_succ_iff.mp h)
 
+theorem listGet?_map {α β : Type u} (f : α → β) :
+    ∀ {xs : List α} {i : Nat} {x : α},
+      listGet? xs i = some x →
+        listGet? (xs.map f) i = some (f x)
+  | [], i, _, h => by
+      cases i <;> simp [listGet?] at h
+  | _ :: _, 0, _, h => by
+      simp [listGet?] at h ⊢
+      exact congrArg f h
+  | _ :: xs, Nat.succ i, x, h => by
+      simp [listGet?] at h ⊢
+      exact listGet?_map f h
+
 theorem choiceGraph_child_wellFormed
     {children : List (POWL2 Activity)} {graph : POWL2ChoiceGraph}
     (h : WellFormed (choiceGraph children graph))
