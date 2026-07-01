@@ -43,12 +43,6 @@ namespace POWL2
 
 variable {Activity : Type u}
 
-/-- Fold an n-ary exclusive choice back into the original binary POWL syntax. -/
-def foldXor : List (POWL Activity) → POWL Activity
-  | [] => POWL.tau
-  | [p] => p
-  | p :: ps => POWL.xor p (foldXor ps)
-
 /-- The total order used by a POWL2 sequence block after desugaring. -/
 def sequenceOrder (n : Nat) : Nat → Nat → Prop :=
   fun i j => i < j ∧ j < n
@@ -63,22 +57,6 @@ def xorChoiceGraph (n : Nat) : POWL2ChoiceGraph where
   start := fun i => i < n
   finish := fun i => i < n
   edge := fun _ _ => False
-
-/-- Desugar POWL2 to the original POWL core. -/
-def toPOWL : POWL2 Activity → POWL Activity
-  | tau => POWL.tau
-  | activity a => POWL.activity a
-  | ofPOWL p => p
-  | xorMany children => foldXor (children.map toPOWL)
-  | sequence children =>
-      POWL.partialOrder (children.map toPOWL)
-        (sequenceOrder children.length)
-  | parallel children =>
-      POWL.partialOrder (children.map toPOWL) parallelOrder
-  | loop body redo => POWL.loop (toPOWL body) (toPOWL redo)
-  | choiceGraph children _ => foldXor (children.map toPOWL)
-  | partialOrder children order =>
-      POWL.partialOrder (children.map toPOWL) order
 
 /-- POWL2 well-formedness follows the recursive paper syntax. -/
 def WellFormed : POWL2 Activity → Prop

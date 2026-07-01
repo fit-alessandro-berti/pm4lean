@@ -21,16 +21,6 @@ noncomputable def language : POWL Activity → Language Activity
   | loop body redo =>
       Language.seq (language body)
         (Language.Star (Language.seq (language redo) (language body)))
-  | partialOrder [l, r] order =>
-      by
-        classical
-        exact
-          if order 0 1 then
-            Language.seq (language l) (language r)
-          else if order 1 0 then
-            Language.seq (language r) (language l)
-          else
-            Language.parallel (language l) (language r)
   | partialOrder children order =>
       Language.partialOrder (children.map language) order
 
@@ -61,20 +51,6 @@ theorem partialOrder_nil_language (order : Nat → Nat → Prop) :
         · exact IndexedInterleavesFrom.nil 0
         · intro i j _ left₁ a right₁ _ _ _ h _
           cases left₁ <;> simp at h)
-
-theorem partialOrder_pair_sequence_language
-    (l r : POWL Activity) :
-    language (partialOrder [l, r] (fun i j => i = 0 ∧ j = 1)) =
-      Language.seq (language l) (language r) := by
-  classical
-  simp [language]
-
-theorem partialOrder_pair_parallel_language
-    (l r : POWL Activity) :
-    language (partialOrder [l, r] (fun _ _ => False)) =
-      Language.parallel (language l) (language r) := by
-  classical
-  simp [language]
 
 end POWL
 end ProcessModel
