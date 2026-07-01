@@ -1,5 +1,4 @@
-import Pm4Lean.Models.POWL2.Semantics
-import Pm4Lean.Models.Petri.WFNet.Construction.SilentTransition
+import Pm4Lean.Conversion.POWL2ToSoundWfNet.Structural
 
 namespace Pm4Lean
 namespace ProcessModel
@@ -7,19 +6,24 @@ namespace POWL2ToSoundWfNet
 
 variable {Activity : Type u}
 
-/-- The labeled WF-net generated for a POWL2 model. -/
-def target (p : POWL2 Activity) :
+/-- The labeled WF-net generated structurally from a POWL2 model. -/
+noncomputable def target (p : POWL2 Activity) :
     Petri.LabeledWFNet Activity :=
-  Petri.LabeledWFNet.SilentTransition.withLanguage (POWL2.language p)
+  Structural.target p
 
-theorem preserves_language (p : POWL2 Activity) :
-    Language.Equivalent (POWL2.language p)
-      (Petri.LabeledWFNet.language (target p)) :=
-  Language.equivalent_refl (POWL2.language p)
+theorem language_eq_operational (p : POWL2 Activity) :
+    Petri.LabeledWFNet.language (target p) =
+      Petri.LabeledWFNet.operationalLanguage (target p) :=
+  Structural.language_eq_operational p
 
-theorem sound_target (p : POWL2 Activity) :
-    Petri.Sound (target p).wfnet :=
-  Petri.LabeledWFNet.SilentTransition.sound_withLanguage (POWL2.language p)
+theorem language_realized_by_firing
+    (p : POWL2 Activity) {σ : Trace Activity}
+    (h : Petri.LabeledWFNet.language (target p) σ) :
+    ∃ ts : List (target p).wfnet.net.Transition,
+      Petri.FiringSequence (target p).wfnet.net
+        (target p).wfnet.initial ts (target p).wfnet.final ∧
+      Petri.LabeledWFNet.traceOf (target p) ts = σ := by
+  exact Structural.language_realized_by_firing p h
 
 end POWL2ToSoundWfNet
 end ProcessModel

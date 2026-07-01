@@ -53,12 +53,31 @@ theorem traceOf_cons_visible
     traceOf LW (t :: ts) = a :: traceOf LW ts := by
   simp [traceOf, h]
 
+theorem traceOf_append
+    (LW : LabeledWFNet Activity)
+    (xs ys : List LW.wfnet.net.Transition) :
+    traceOf LW (xs ++ ys) = traceOf LW xs ++ traceOf LW ys := by
+  induction xs with
+  | nil => rfl
+  | cons t xs ih =>
+      cases h : LW.label t <;> simp [traceOf, h, ih]
+
 theorem language_of_firingSequence
     (LW : LabeledWFNet Activity)
     {ts : List LW.wfnet.net.Transition}
     (hSeq : FiringSequence LW.wfnet.net LW.wfnet.initial ts LW.wfnet.final) :
     operationalLanguage LW (traceOf LW ts) :=
   ⟨ts, hSeq, rfl⟩
+
+theorem language_of_firingSequence_append
+    (LW : LabeledWFNet Activity)
+    {M : LW.wfnet.net.Marking}
+    {xs ys : List LW.wfnet.net.Transition}
+    (hxs : FiringSequence LW.wfnet.net LW.wfnet.initial xs M)
+    (hys : FiringSequence LW.wfnet.net M ys LW.wfnet.final) :
+    operationalLanguage LW (traceOf LW xs ++ traceOf LW ys) := by
+  refine ⟨xs ++ ys, FiringSequence.append hxs hys, ?_⟩
+  exact traceOf_append LW xs ys
 
 theorem empty_trace_of_initial_final
     (LW : LabeledWFNet Activity) (h : LW.wfnet.initial = LW.wfnet.final) :

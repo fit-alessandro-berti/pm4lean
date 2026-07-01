@@ -32,6 +32,50 @@ inductive TracesIn {Activity : Type u} :
       {σ : Trace Activity} {traces : List (Trace Activity)} :
       L σ → TracesIn Ls traces → TracesIn (L :: Ls) (σ :: traces)
 
+/-- Attach one origin index to every event of a trace. -/
+def tagTrace {Activity : Type u} (origin : Nat)
+    (σ : Trace Activity) : List (Nat × Activity) :=
+  σ.map (fun a => (origin, a))
+
+/--
+Interleaving of component traces after tagging every event with the index of
+the component it came from.
+-/
+inductive IndexedInterleavesFrom {Activity : Type u} :
+    Nat → List (Trace Activity) → List (Nat × Activity) → Prop where
+  | nil (origin : Nat) : IndexedInterleavesFrom origin [] []
+  | cons {origin : Nat} {σ : Trace Activity}
+      {rest : List (Trace Activity)} {τ out : List (Nat × Activity)} :
+      IndexedInterleavesFrom (origin + 1) rest τ →
+      Shuffle (tagTrace origin σ) τ out →
+      IndexedInterleavesFrom origin (σ :: rest) out
+
+/-- Indexed interleavings of a list of component traces, starting at index 0. -/
+abbrev IndexedInterleaves {Activity : Type u}
+    (traces : List (Trace Activity)) (out : List (Nat × Activity)) : Prop :=
+  IndexedInterleavesFrom 0 traces out
+
+/-- Drop origin tags from an indexed trace. -/
+def untagTrace {Activity : Type u}
+    (σ : List (Nat × Activity)) : Trace Activity :=
+  σ.map Prod.snd
+
+/--
+All events from `before` occur before all events from `after` in an indexed
+trace.  The predicate is vacuous when either component contributes no events.
+-/
+def OriginBefore {Activity : Type u}
+    (before after : Nat) (σ : List (Nat × Activity)) : Prop :=
+  ∀ left₁ a right₁ left₂ b right₂,
+    σ = left₁ ++ (before, a) :: right₁ →
+    σ = left₂ ++ (after, b) :: right₂ →
+    left₁.length < left₂.length
+
+/-- An indexed trace respects every precedence edge of a partial order. -/
+def RespectsOriginOrder {Activity : Type u}
+    (order : Nat → Nat → Prop) (σ : List (Nat × Activity)) : Prop :=
+  ∀ i j, order i j → OriginBefore i j σ
+
 /-- Language inclusion. -/
 def Language.Subset {Activity : Type u}
     (L₁ L₂ : Language Activity) : Prop :=
@@ -73,6 +117,42 @@ def interleaving {Activity : Type u}
     (Ls : List (Language Activity)) : Language Activity :=
   fun σ => ∃ traces : List (Trace Activity),
     TracesIn Ls traces ∧ Interleaves traces σ
+
+/--
+Partial-order composition of a finite list of component languages.  It is an
+interleaving annotated with component origins, restricted so that every event
+from an ordered predecessor component occurs before every event from the
+successor component.
+-/
+def partialOrder {Activity : Type u}
+    (Ls : List (Language Activity)) (order : Nat → Nat → Prop) :
+    Language Activity :=
+  fun σ => ∃ traces : List (Trace Activity), ∃ indexed : List (Nat × Activity),
+    TracesIn Ls traces ∧
+      IndexedInterleaves traces indexed ∧
+      RespectsOriginOrder order indexed ∧
+      untagTrace indexed = σ
+
+theorem partialOrder_nil_iff {Activity : Type u}
+    (order : Nat → Nat → Prop) (σ : Trace Activity) :
+    partialOrder [] order σ ↔ σ = [] := by
+  constructor
+  · intro h
+    rcases h with ⟨traces, indexed, hTraces, hInterleaves, _, hUntag⟩
+    have hTracesNil : traces = [] := by
+      cases hTraces
+      rfl
+    subst traces
+    have hIndexedNil : indexed = [] := by
+      cases hInterleaves
+      rfl
+    subst indexed
+    simpa [untagTrace] using hUntag.symm
+  · intro h
+    subst h
+    refine ⟨[], [], TracesIn.nil, IndexedInterleavesFrom.nil 0, ?_, rfl⟩
+    intro i j _ left₁ a right₁ _ _ _ hEq _
+    cases left₁ <;> simp at hEq
 
 /-- Kleene-style finite repetition of a language. -/
 inductive Star {Activity : Type u} (L : Language Activity) :

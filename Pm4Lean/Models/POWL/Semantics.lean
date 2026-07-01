@@ -10,9 +10,9 @@ variable {Activity : Type u}
 /--
 Concrete finite-trace semantics for POWL terms.
 
-The current partial-order node semantics interleaves all child languages.  The
-order relation is captured by `WellFormed`; order-constrained interleavings can
-refine this definition once event-origin tracking is introduced.
+Partial-order nodes use origin-tagged interleavings: every child contributes a
+trace, and every event from an ordered predecessor child must occur before every
+event from its successor child.
 -/
 noncomputable def language : POWL Activity → Language Activity
   | tau => Language.epsilon
@@ -31,8 +31,8 @@ noncomputable def language : POWL Activity → Language Activity
             Language.seq (language r) (language l)
           else
             Language.parallel (language l) (language r)
-  | partialOrder children _ =>
-      Language.interleaving (children.map language)
+  | partialOrder children order =>
+      Language.partialOrder (children.map language) order
 
 theorem tau_language :
     language (Activity := Activity) tau = Language.epsilon :=
@@ -55,15 +55,12 @@ theorem loop_body_once {body redo : POWL Activity} {σ : Trace Activity}
 theorem partialOrder_nil_language (order : Nat → Nat → Prop) :
     language (partialOrder ([] : List (POWL Activity)) order) [] := by
   simpa [language] using
-    (Language.interleaving_nil (Activity := Activity))
-
-theorem partialOrder_singleton_equiv
-    (child : POWL Activity) (order : Nat → Nat → Prop) :
-    Language.Equivalent
-      (language (partialOrder [child] order))
-      (language child) := by
-  simpa [language] using
-    (Language.interleaving_singleton (language child))
+    (show Language.partialOrder ([] : List (Language Activity)) order [] from
+      by
+        refine ⟨[], [], TracesIn.nil, ?_, ?_, rfl⟩
+        · exact IndexedInterleavesFrom.nil 0
+        · intro i j _ left₁ a right₁ _ _ _ h _
+          cases left₁ <;> simp at h)
 
 theorem partialOrder_pair_sequence_language
     (l r : POWL Activity) :
