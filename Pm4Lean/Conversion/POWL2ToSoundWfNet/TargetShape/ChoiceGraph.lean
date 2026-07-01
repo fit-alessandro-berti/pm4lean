@@ -148,6 +148,19 @@ theorem choiceGraph_empty_language_realized_by_firing
       (target (POWL2.choiceGraph children graph)) [] :=
   choiceGraph_empty_operational_epsilon children graph h
 
+theorem choiceGraph_empty_language_firing_witness
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    (h : graph.empty)
+    (_hLang : POWL2.language (POWL2.choiceGraph children graph) []) :
+    ∃ ts : List (target (POWL2.choiceGraph children graph)).wfnet.net.Transition,
+      Petri.FiringSequence (target (POWL2.choiceGraph children graph)).wfnet.net
+        (target (POWL2.choiceGraph children graph)).wfnet.initial ts
+        (target (POWL2.choiceGraph children graph)).wfnet.final ∧
+      Petri.LabeledWFNet.traceOf (target (POWL2.choiceGraph children graph))
+        ts = [] := by
+  simpa [Petri.LabeledWFNet.operationalLanguage] using
+    choiceGraph_empty_operational_epsilon children graph h
+
 theorem choiceGraph_start_root_mem
     (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
     {i : Nat} (hStart : graph.start i) (hRange : i < children.length) :
@@ -194,6 +207,57 @@ theorem choiceGraph_start_produces_target_child_entry
   simp [transitionOf, placeOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
     Structural.choiceGraph_start_produces_child_entry]
+
+theorem choiceGraph_start_pre_singleton
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} (hStart : graph.start i) (hRange : i < children.length) :
+    let p := POWL2.choiceGraph children graph
+    let t := transitionOf p (Structural.transition [] (TransitionKind.choiceStart i))
+      (choiceGraph_start_root_mem children graph hStart hRange)
+    (target p).wfnet.net.pre t =
+      Petri.Marking.singleton (target p).wfnet.i := by
+  apply Petri.Marking.ext
+  intro q
+  cases q
+  simp [transitionOf, target, Structural.target, Structural.wfnet,
+    Structural.net, Structural.compiled, Structural.normalize,
+    Structural.rawPre, Structural.rawPreFor, Structural.rawMark,
+    Structural.entry, Structural.transition, Petri.Marking.singleton]
+
+theorem choiceGraph_start_post_singleton
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} (hStart : graph.start i) (hRange : i < children.length) :
+    let p := POWL2.choiceGraph children graph
+    let t := transitionOf p (Structural.transition [] (TransitionKind.choiceStart i))
+      (choiceGraph_start_root_mem children graph hStart hRange)
+    let childEntry := placeOf p (Structural.childEntry [] i)
+      (choiceGraph_child_entry_root_mem children graph hRange)
+    (target p).wfnet.net.post t =
+      Petri.Marking.singleton childEntry := by
+  apply Petri.Marking.ext
+  intro q
+  cases q
+  simp [transitionOf, placeOf, target, Structural.target, Structural.wfnet,
+    Structural.net, Structural.compiled, Structural.normalize,
+    Structural.rawPost, Structural.rawPostFor, Structural.rawMark,
+    Structural.childEntry, Structural.childAddr, Structural.entry,
+    Structural.transition, Petri.Marking.singleton]
+
+theorem choiceGraph_start_firingSequence
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} (hStart : graph.start i) (hRange : i < children.length) :
+    let p := POWL2.choiceGraph children graph
+    let t := transitionOf p (Structural.transition [] (TransitionKind.choiceStart i))
+      (choiceGraph_start_root_mem children graph hStart hRange)
+    let childEntry := placeOf p (Structural.childEntry [] i)
+      (choiceGraph_child_entry_root_mem children graph hRange)
+    Petri.FiringSequence (target p).wfnet.net (target p).wfnet.initial [t]
+      (Petri.Marking.singleton childEntry) := by
+  intro p t childEntry
+  simpa [Petri.WFNet.initial] using
+    Petri.FiringSequence.singleton_of_pre_post (target p).wfnet.i childEntry t
+      (choiceGraph_start_pre_singleton children graph hStart hRange)
+      (choiceGraph_start_post_singleton children graph hStart hRange)
 
 theorem choiceGraph_edge_root_mem
     (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
@@ -248,6 +312,66 @@ theorem choiceGraph_edge_produces_target_target_child_entry
     Structural.net, Structural.compiled, Structural.normalize,
     Structural.choiceGraph_edge_produces_target_child_entry]
 
+theorem choiceGraph_edge_pre_singleton
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i j : Nat} (hEdge : graph.edge i j)
+    (hI : i < children.length) (hJ : j < children.length) :
+    let p := POWL2.choiceGraph children graph
+    let t := transitionOf p (Structural.transition [] (TransitionKind.choiceEdge i j))
+      (choiceGraph_edge_root_mem children graph hEdge hI hJ)
+    let sourceExit := placeOf p (Structural.childExit [] i)
+      (choiceGraph_child_exit_root_mem children graph hI)
+    (target p).wfnet.net.pre t =
+      Petri.Marking.singleton sourceExit := by
+  apply Petri.Marking.ext
+  intro q
+  cases q
+  simp [transitionOf, placeOf, target, Structural.target, Structural.wfnet,
+    Structural.net, Structural.compiled, Structural.normalize,
+    Structural.rawPre, Structural.rawPreFor, Structural.rawMark,
+    Structural.childExit, Structural.childAddr, Structural.exit,
+    Structural.transition, Petri.Marking.singleton]
+
+theorem choiceGraph_edge_post_singleton
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i j : Nat} (hEdge : graph.edge i j)
+    (hI : i < children.length) (hJ : j < children.length) :
+    let p := POWL2.choiceGraph children graph
+    let t := transitionOf p (Structural.transition [] (TransitionKind.choiceEdge i j))
+      (choiceGraph_edge_root_mem children graph hEdge hI hJ)
+    let targetEntry := placeOf p (Structural.childEntry [] j)
+      (choiceGraph_child_entry_root_mem children graph hJ)
+    (target p).wfnet.net.post t =
+      Petri.Marking.singleton targetEntry := by
+  apply Petri.Marking.ext
+  intro q
+  cases q
+  simp [transitionOf, placeOf, target, Structural.target, Structural.wfnet,
+    Structural.net, Structural.compiled, Structural.normalize,
+    Structural.rawPost, Structural.rawPostFor, Structural.rawMark,
+    Structural.childEntry, Structural.childAddr, Structural.entry,
+    Structural.transition, Petri.Marking.singleton]
+
+theorem choiceGraph_edge_firingSequence
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i j : Nat} (hEdge : graph.edge i j)
+    (hI : i < children.length) (hJ : j < children.length) :
+    let p := POWL2.choiceGraph children graph
+    let t := transitionOf p (Structural.transition [] (TransitionKind.choiceEdge i j))
+      (choiceGraph_edge_root_mem children graph hEdge hI hJ)
+    let sourceExit := placeOf p (Structural.childExit [] i)
+      (choiceGraph_child_exit_root_mem children graph hI)
+    let targetEntry := placeOf p (Structural.childEntry [] j)
+      (choiceGraph_child_entry_root_mem children graph hJ)
+    Petri.FiringSequence (target p).wfnet.net
+      (Petri.Marking.singleton sourceExit) [t]
+      (Petri.Marking.singleton targetEntry) := by
+  intro p t sourceExit targetEntry
+  exact
+    Petri.FiringSequence.singleton_of_pre_post sourceExit targetEntry t
+      (choiceGraph_edge_pre_singleton children graph hEdge hI hJ)
+      (choiceGraph_edge_post_singleton children graph hEdge hI hJ)
+
 theorem choiceGraph_end_root_mem
     (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
     {i : Nat} (hFinish : graph.finish i) (hRange : i < children.length) :
@@ -294,6 +418,57 @@ theorem choiceGraph_end_produces_target_exit
   simp [transitionOf, placeOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
     Structural.choiceGraph_end_produces_exit]
+
+theorem choiceGraph_end_pre_singleton
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} (hFinish : graph.finish i) (hRange : i < children.length) :
+    let p := POWL2.choiceGraph children graph
+    let t := transitionOf p (Structural.transition [] (TransitionKind.choiceEnd i))
+      (choiceGraph_end_root_mem children graph hFinish hRange)
+    let childExit := placeOf p (Structural.childExit [] i)
+      (choiceGraph_child_exit_root_mem children graph hRange)
+    (target p).wfnet.net.pre t =
+      Petri.Marking.singleton childExit := by
+  apply Petri.Marking.ext
+  intro q
+  cases q
+  simp [transitionOf, placeOf, target, Structural.target, Structural.wfnet,
+    Structural.net, Structural.compiled, Structural.normalize,
+    Structural.rawPre, Structural.rawPreFor, Structural.rawMark,
+    Structural.childExit, Structural.childAddr, Structural.exit,
+    Structural.transition, Petri.Marking.singleton]
+
+theorem choiceGraph_end_post_singleton
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} (hFinish : graph.finish i) (hRange : i < children.length) :
+    let p := POWL2.choiceGraph children graph
+    let t := transitionOf p (Structural.transition [] (TransitionKind.choiceEnd i))
+      (choiceGraph_end_root_mem children graph hFinish hRange)
+    (target p).wfnet.net.post t =
+      Petri.Marking.singleton (target p).wfnet.o := by
+  apply Petri.Marking.ext
+  intro q
+  cases q
+  simp [transitionOf, target, Structural.target, Structural.wfnet,
+    Structural.net, Structural.compiled, Structural.normalize,
+    Structural.rawPost, Structural.rawPostFor, Structural.rawMark,
+    Structural.exit, Structural.transition, Petri.Marking.singleton]
+
+theorem choiceGraph_end_firingSequence
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} (hFinish : graph.finish i) (hRange : i < children.length) :
+    let p := POWL2.choiceGraph children graph
+    let t := transitionOf p (Structural.transition [] (TransitionKind.choiceEnd i))
+      (choiceGraph_end_root_mem children graph hFinish hRange)
+    let childExit := placeOf p (Structural.childExit [] i)
+      (choiceGraph_child_exit_root_mem children graph hRange)
+    Petri.FiringSequence (target p).wfnet.net
+      (Petri.Marking.singleton childExit) [t] (target p).wfnet.final := by
+  intro p t childExit
+  simpa [Petri.WFNet.final] using
+    Petri.FiringSequence.singleton_of_pre_post childExit (target p).wfnet.o t
+      (choiceGraph_end_pre_singleton children graph hFinish hRange)
+      (choiceGraph_end_post_singleton children graph hFinish hRange)
 
 end TargetShape
 

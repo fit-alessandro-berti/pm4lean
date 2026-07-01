@@ -28,6 +28,7 @@ def WellFormed : POWL Activity → Prop
   | xor l r => WellFormed l ∧ WellFormed r
   | loop body redo => WellFormed body ∧ WellFormed redo
   | partialOrder children order =>
+      2 ≤ children.length ∧
       (∀ child ∈ children, WellFormed child) ∧
       IrreflexiveOnRange children.length order ∧
       TransitiveOnRange children.length order

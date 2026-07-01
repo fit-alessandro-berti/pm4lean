@@ -118,6 +118,23 @@ theorem placesForPartialOrder_prefix_mem
     exact Or.inr (Or.inr (Or.inr (Or.inr ⟨i, j, hPair, by
       simp [prefixPlace, poPredDone]⟩)))
 
+theorem placesForPartialOrder_addr_suffix
+    (addr : Address) (n : Nat) {q : RawPlace}
+    (hMem : q ∈ placesForPartialOrder addr n) :
+    ∃ suffix : Address, q.addr = addr ++ suffix := by
+  simp [placesForPartialOrder] at hMem
+  rcases hMem with hEntry | hExit | hReady | hDone | hPred
+  · subst hEntry
+    exact ⟨[], by simp [entry]⟩
+  · subst hExit
+    exact ⟨[], by simp [exit]⟩
+  · rcases hReady with ⟨i, _hRange, rfl⟩
+    exact ⟨[], by simp [poReady]⟩
+  · rcases hDone with ⟨i, _hRange, rfl⟩
+    exact ⟨[], by simp [poDone]⟩
+  · rcases hPred with ⟨i, j, _hPair, rfl⟩
+    exact ⟨[], by simp [poPredDone]⟩
+
 mutual
   theorem rawPlaces_prefix_mem :
       ∀ (p : POWL2 Activity) (pref addr : Address) {q : RawPlace},
@@ -190,9 +207,210 @@ mutual
               rawPlaces_prefix_mem child pref
                 (childAddr addr start) hHead)
         · exact Or.inr
-            (rawPlacesChildren_prefix_mem rest pref addr
+              (rawPlacesChildren_prefix_mem rest pref addr
               (start + 1) hRest)
 end
+
+mutual
+  theorem rawPlaces_addr_suffix :
+      ∀ (p : POWL2 Activity) (addr : Address) {q : RawPlace},
+        q ∈ rawPlaces p addr →
+          ∃ suffix : Address, q.addr = addr ++ suffix
+    | POWL2.tau, addr, q, hMem => by
+        simp [rawPlaces] at hMem
+        rcases hMem with hEntry | hExit
+        · subst hEntry
+          exact ⟨[], by simp [entry]⟩
+        · subst hExit
+          exact ⟨[], by simp [exit]⟩
+    | POWL2.activity _, addr, q, hMem => by
+        simp [rawPlaces] at hMem
+        rcases hMem with hEntry | hExit
+        · subst hEntry
+          exact ⟨[], by simp [entry]⟩
+        · subst hExit
+          exact ⟨[], by simp [exit]⟩
+    | POWL2.loop body redo, addr, q, hMem => by
+        simp [rawPlaces] at hMem
+        rcases hMem with hEntry | hExit | hBody | hRedo
+        · subst hEntry
+          exact ⟨[], by simp [entry]⟩
+        · subst hExit
+          exact ⟨[], by simp [exit]⟩
+        · rcases rawPlaces_addr_suffix body (childAddr addr 0) hBody
+            with ⟨suffix, hAddr⟩
+          exact ⟨[0] ++ suffix, by simpa [childAddr, List.append_assoc] using hAddr⟩
+        · rcases rawPlaces_addr_suffix redo (childAddr addr 1) hRedo
+            with ⟨suffix, hAddr⟩
+          exact ⟨[1] ++ suffix, by simpa [childAddr, List.append_assoc] using hAddr⟩
+    | POWL2.choiceGraph children graph, addr, q, hMem => by
+        simp [rawPlaces] at hMem
+        rcases hMem with hEntry | hExit | hChildren
+        · subst hEntry
+          exact ⟨[], by simp [entry]⟩
+        · subst hExit
+          exact ⟨[], by simp [exit]⟩
+        · exact rawPlacesChildren_addr_suffix children addr 0 hChildren
+    | POWL2.partialOrder children order, addr, q, hMem => by
+        have hSplit :
+            q ∈ placesForPartialOrder addr children.length ∨
+              q ∈ rawPlacesChildren children addr 0 := by
+          simpa [rawPlaces] using List.mem_append.mp hMem
+        cases hSplit with
+        | inl hConn => exact placesForPartialOrder_addr_suffix addr children.length hConn
+        | inr hChildren => exact rawPlacesChildren_addr_suffix children addr 0 hChildren
+
+  theorem rawPlacesChildren_addr_suffix :
+      ∀ (children : List (POWL2 Activity)) (addr : Address) (start : Nat)
+        {q : RawPlace},
+        q ∈ rawPlacesChildren children addr start →
+          ∃ suffix : Address, q.addr = addr ++ suffix
+    | [], addr, start, q, hMem => by
+        simp [rawPlacesChildren] at hMem
+    | child :: rest, addr, start, q, hMem => by
+        simp [rawPlacesChildren] at hMem
+        rcases hMem with hHead | hRest
+        · rcases rawPlaces_addr_suffix child (childAddr addr start) hHead
+            with ⟨suffix, hAddr⟩
+          exact ⟨[start] ++ suffix, by simpa [childAddr, List.append_assoc] using hAddr⟩
+        · exact rawPlacesChildren_addr_suffix rest addr (start + 1) hRest
+end
+
+mutual
+  theorem rawPlaces_unprefix_mem :
+      ∀ (p : POWL2 Activity) (pref addr : Address) {q : RawPlace},
+        prefixPlace pref q ∈ rawPlaces p (pref ++ addr) →
+          q ∈ rawPlaces p addr
+    | POWL2.tau, pref, addr, q, hMem => by
+        simp [rawPlaces] at hMem ⊢
+        rcases hMem with hEntry | hExit
+        · left
+          cases q
+          simp [prefixPlace, entry] at hEntry ⊢
+          exact hEntry
+        · right
+          cases q
+          simp [prefixPlace, exit] at hExit ⊢
+          exact hExit
+    | POWL2.activity _, pref, addr, q, hMem => by
+        simp [rawPlaces] at hMem ⊢
+        rcases hMem with hEntry | hExit
+        · left
+          cases q
+          simp [prefixPlace, entry] at hEntry ⊢
+          exact hEntry
+        · right
+          cases q
+          simp [prefixPlace, exit] at hExit ⊢
+          exact hExit
+    | POWL2.loop body redo, pref, addr, q, hMem => by
+        simp [rawPlaces] at hMem ⊢
+        rcases hMem with hEntry | hExit | hBody | hRedo
+        · left
+          cases q
+          simp [prefixPlace, entry] at hEntry ⊢
+          exact hEntry
+        · right; left
+          cases q
+          simp [prefixPlace, exit] at hExit ⊢
+          exact hExit
+        · exact Or.inr (Or.inr (Or.inl (by
+            have hBody' :
+                prefixPlace pref q ∈
+                  rawPlaces body (pref ++ childAddr addr 0) := by
+              simpa [childAddr, List.append_assoc] using hBody
+            simpa [childAddr, List.append_assoc] using
+              rawPlaces_unprefix_mem body pref (childAddr addr 0) hBody')))
+        · exact Or.inr (Or.inr (Or.inr (by
+            have hRedo' :
+                prefixPlace pref q ∈
+                  rawPlaces redo (pref ++ childAddr addr 1) := by
+              simpa [childAddr, List.append_assoc] using hRedo
+            simpa [childAddr, List.append_assoc] using
+              rawPlaces_unprefix_mem redo pref (childAddr addr 1) hRedo')))
+    | POWL2.choiceGraph children graph, pref, addr, q, hMem => by
+        simp [rawPlaces] at hMem ⊢
+        rcases hMem with hEntry | hExit | hChildren
+        · left
+          cases q
+          simp [prefixPlace, entry] at hEntry ⊢
+          exact hEntry
+        · right; left
+          cases q
+          simp [prefixPlace, exit] at hExit ⊢
+          exact hExit
+        · exact Or.inr (Or.inr
+            (rawPlacesChildren_unprefix_mem children pref addr 0 hChildren))
+    | POWL2.partialOrder children order, pref, addr, q, hMem => by
+        have hSplit :
+            prefixPlace pref q ∈ placesForPartialOrder (pref ++ addr) children.length ∨
+              prefixPlace pref q ∈ rawPlacesChildren children (pref ++ addr) 0 := by
+          simpa [rawPlaces] using List.mem_append.mp hMem
+        apply List.mem_append.mpr
+        cases hSplit with
+        | inl hConn =>
+            left
+            simp [placesForPartialOrder] at hConn ⊢
+            rcases hConn with hEntry | hExit | hReady | hDone | hPred
+            · left
+              cases q
+              simp [prefixPlace, entry] at hEntry ⊢
+              exact hEntry
+            · right; left
+              cases q
+              simp [prefixPlace, exit] at hExit ⊢
+              exact hExit
+            · rcases hReady with ⟨i, hRange, hEq⟩
+              right; right; left
+              cases q
+              simp [prefixPlace, poReady] at hEq ⊢
+              exact ⟨i, hRange, hEq⟩
+            · rcases hDone with ⟨i, hRange, hEq⟩
+              right; right; right; left
+              cases q
+              simp [prefixPlace, poDone] at hEq ⊢
+              exact ⟨i, hRange, hEq⟩
+            · rcases hPred with ⟨i, j, hPair, hEq⟩
+              right; right; right; right
+              cases q
+              simp [prefixPlace, poPredDone] at hEq ⊢
+              exact ⟨i, j, hPair, hEq⟩
+        | inr hChildren =>
+            right
+            exact rawPlacesChildren_unprefix_mem children pref addr 0 hChildren
+
+  theorem rawPlacesChildren_unprefix_mem :
+      ∀ (children : List (POWL2 Activity)) (pref addr : Address) (start : Nat)
+        {q : RawPlace},
+        prefixPlace pref q ∈ rawPlacesChildren children (pref ++ addr) start →
+          q ∈ rawPlacesChildren children addr start
+    | [], pref, addr, start, q, hMem => by
+        simp [rawPlacesChildren] at hMem
+    | child :: rest, pref, addr, start, q, hMem => by
+        simp [rawPlacesChildren] at hMem ⊢
+        rcases hMem with hHead | hRest
+        · exact Or.inl (by
+            have hHead' :
+                prefixPlace pref q ∈
+                  rawPlaces child (pref ++ childAddr addr start) := by
+              simpa [childAddr, List.append_assoc] using hHead
+            simpa [childAddr, List.append_assoc] using
+              rawPlaces_unprefix_mem child pref
+                (childAddr addr start) hHead')
+        · exact Or.inr
+            (rawPlacesChildren_unprefix_mem rest pref addr
+              (start + 1) hRest)
+end
+
+theorem prefixPlace_ne_mem_rawPlaces_of_child_index_ne
+    (p : POWL2 Activity) {i j : Nat} (hNe : i ≠ j)
+    (base : RawPlace)
+    (hMem : prefixPlace [i] base ∈ rawPlaces p (childAddr [] j)) :
+    False := by
+  rcases rawPlaces_addr_suffix p (childAddr [] j) hMem with ⟨suffix, hAddr⟩
+  have hHead : some i = some j := by
+    simpa [prefixPlace, childAddr] using congrArg List.head? hAddr
+  exact hNe (Option.some.inj hHead)
 
 theorem transitionsForPartialOrder_prefix_mem
     (pref addr : Address) (n : Nat) {t : RawTransition}

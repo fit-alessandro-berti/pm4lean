@@ -88,6 +88,28 @@ theorem loopRedoRootTransition_label
     target, Structural.target, Structural.compiled, Structural.normalize,
     Structural.rawLabel_loop_redo_prefix]
 
+theorem loopBodyRootTransition_traceOf
+    (body redo : POWL2 Activity)
+    (ts : List (target body).wfnet.net.Transition) :
+    Petri.LabeledWFNet.traceOf (target (POWL2.loop body redo))
+        (ts.map (loopBodyRootTransitionOf body redo)) =
+      Petri.LabeledWFNet.traceOf (target body) ts :=
+  Petri.LabeledWFNet.traceOf_map (target body)
+    (target (POWL2.loop body redo))
+    (loopBodyRootTransitionOf body redo)
+    (loopBodyRootTransition_label body redo) ts
+
+theorem loopRedoRootTransition_traceOf
+    (body redo : POWL2 Activity)
+    (ts : List (target redo).wfnet.net.Transition) :
+    Petri.LabeledWFNet.traceOf (target (POWL2.loop body redo))
+        (ts.map (loopRedoRootTransitionOf body redo)) =
+      Petri.LabeledWFNet.traceOf (target redo) ts :=
+  Petri.LabeledWFNet.traceOf_map (target redo)
+    (target (POWL2.loop body redo))
+    (loopRedoRootTransitionOf body redo)
+    (loopRedoRootTransition_label body redo) ts
+
 def loopBodyPlaceOf
     (body redo : POWL2 Activity) (q : RawPlace)
     (hMem :
@@ -122,6 +144,54 @@ def loopBodyRootPlaceOf
       Structural.rawPlaces_prefix_mem
         (Structural.compiled body) [0] [] q.2)
 
+theorem loopBodyRootPlaceOf_injective
+    (body redo : POWL2 Activity) :
+    Function.Injective (loopBodyRootPlaceOf body redo) := by
+  intro q r h
+  apply Subtype.ext
+  apply Structural.prefixPlace_injective [0]
+  exact congrArg Subtype.val h
+
+theorem loop_body_rawPlacesRoot_unprefix
+    (body redo : POWL2 Activity) {base : RawPlace}
+    (hMem :
+      Structural.prefixPlace [0] base ∈
+        Structural.rawPlacesRoot (POWL2.loop body redo)) :
+    base ∈ Structural.rawPlacesRoot body := by
+  have hSplit := hMem
+  simp [Structural.rawPlacesRoot, Structural.compiled,
+    Structural.normalize, Structural.rawPlaces] at hSplit
+  rcases hSplit with hEntry | hExit | hBody | hRedo
+  · cases base
+    simp [Structural.prefixPlace, Structural.entry] at hEntry
+  · cases base
+    simp [Structural.prefixPlace, Structural.exit] at hExit
+  · simpa [Structural.rawPlacesRoot, Structural.compiled,
+      Structural.childAddr] using
+      Structural.rawPlaces_unprefix_mem
+        (Structural.normalize body) [0] [] hBody
+  · exact False.elim
+      (Structural.prefixPlace_ne_mem_rawPlaces_of_child_index_ne
+        (Structural.normalize redo) (by decide : 0 ≠ 1) base
+        (by simpa [Structural.childAddr] using hRedo))
+
+theorem loopBodyRootPlaceOf_surjective_of_prefix
+    (body redo : POWL2 Activity)
+    (q : (target (POWL2.loop body redo)).wfnet.net.Place)
+    (hPrefix : Structural.HasPlacePrefix [0] q.1) :
+    ∃ p : (target body).wfnet.net.Place,
+      loopBodyRootPlaceOf body redo p = q := by
+  rcases hPrefix with ⟨base, hBase⟩
+  have hMem :
+      Structural.prefixPlace [0] base ∈
+        Structural.rawPlacesRoot (POWL2.loop body redo) := by
+    simpa [hBase] using q.2
+  let p : (target body).wfnet.net.Place :=
+    ⟨base, loop_body_rawPlacesRoot_unprefix body redo hMem⟩
+  refine ⟨p, ?_⟩
+  apply Subtype.ext
+  simp [p, loopBodyRootPlaceOf, loopBodyPlaceOf, placeOf, hBase]
+
 def loopRedoRootPlaceOf
     (body redo : POWL2 Activity)
     (q : (target redo).wfnet.net.Place) :
@@ -131,6 +201,110 @@ def loopRedoRootPlaceOf
       Structural.childAddr] using
       Structural.rawPlaces_prefix_mem
         (Structural.compiled redo) [1] [] q.2)
+
+theorem loopRedoRootPlaceOf_injective
+    (body redo : POWL2 Activity) :
+    Function.Injective (loopRedoRootPlaceOf body redo) := by
+  intro q r h
+  apply Subtype.ext
+  apply Structural.prefixPlace_injective [1]
+  exact congrArg Subtype.val h
+
+theorem loop_redo_rawPlacesRoot_unprefix
+    (body redo : POWL2 Activity) {base : RawPlace}
+    (hMem :
+      Structural.prefixPlace [1] base ∈
+        Structural.rawPlacesRoot (POWL2.loop body redo)) :
+    base ∈ Structural.rawPlacesRoot redo := by
+  have hSplit := hMem
+  simp [Structural.rawPlacesRoot, Structural.compiled,
+    Structural.normalize, Structural.rawPlaces] at hSplit
+  rcases hSplit with hEntry | hExit | hBody | hRedo
+  · cases base
+    simp [Structural.prefixPlace, Structural.entry] at hEntry
+  · cases base
+    simp [Structural.prefixPlace, Structural.exit] at hExit
+  · exact False.elim
+      (Structural.prefixPlace_ne_mem_rawPlaces_of_child_index_ne
+        (Structural.normalize body) (by decide : 1 ≠ 0) base
+        (by simpa [Structural.childAddr] using hBody))
+  · simpa [Structural.rawPlacesRoot, Structural.compiled,
+      Structural.childAddr] using
+      Structural.rawPlaces_unprefix_mem
+        (Structural.normalize redo) [1] [] hRedo
+
+theorem loopRedoRootPlaceOf_surjective_of_prefix
+    (body redo : POWL2 Activity)
+    (q : (target (POWL2.loop body redo)).wfnet.net.Place)
+    (hPrefix : Structural.HasPlacePrefix [1] q.1) :
+    ∃ p : (target redo).wfnet.net.Place,
+      loopRedoRootPlaceOf body redo p = q := by
+  rcases hPrefix with ⟨base, hBase⟩
+  have hMem :
+      Structural.prefixPlace [1] base ∈
+        Structural.rawPlacesRoot (POWL2.loop body redo) := by
+    simpa [hBase] using q.2
+  let p : (target redo).wfnet.net.Place :=
+    ⟨base, loop_redo_rawPlacesRoot_unprefix body redo hMem⟩
+  refine ⟨p, ?_⟩
+  apply Subtype.ext
+  simp [p, loopRedoRootPlaceOf, loopRedoPlaceOf, placeOf, hBase]
+
+theorem loopBodyRootPlace_initial
+    (body redo : POWL2 Activity) :
+    loopBodyRootPlaceOf body redo (target body).wfnet.i =
+      placeOf (POWL2.loop body redo) (Structural.childEntry [] 0)
+        (by
+          simpa [Structural.rawPlacesRoot, Structural.compiled,
+            Structural.normalize] using
+            Structural.loop_body_entry_mem
+              (Structural.normalize body) (Structural.normalize redo) []) := by
+  apply Subtype.ext
+  simp [loopBodyRootPlaceOf, loopBodyPlaceOf, placeOf, target,
+    Structural.target, Structural.wfnet, Structural.childEntry,
+    Structural.childAddr, Structural.prefixPlace, Structural.entry]
+
+theorem loopBodyRootPlace_final
+    (body redo : POWL2 Activity) :
+    loopBodyRootPlaceOf body redo (target body).wfnet.o =
+      placeOf (POWL2.loop body redo) (Structural.childExit [] 0)
+        (by
+          simpa [Structural.rawPlacesRoot, Structural.compiled,
+            Structural.normalize] using
+            Structural.loop_body_exit_mem
+              (Structural.normalize body) (Structural.normalize redo) []) := by
+  apply Subtype.ext
+  simp [loopBodyRootPlaceOf, loopBodyPlaceOf, placeOf, target,
+    Structural.target, Structural.wfnet, Structural.childExit,
+    Structural.childAddr, Structural.prefixPlace, Structural.exit]
+
+theorem loopRedoRootPlace_initial
+    (body redo : POWL2 Activity) :
+    loopRedoRootPlaceOf body redo (target redo).wfnet.i =
+      placeOf (POWL2.loop body redo) (Structural.childEntry [] 1)
+        (by
+          simpa [Structural.rawPlacesRoot, Structural.compiled,
+            Structural.normalize] using
+            Structural.loop_redo_entry_mem
+              (Structural.normalize body) (Structural.normalize redo) []) := by
+  apply Subtype.ext
+  simp [loopRedoRootPlaceOf, loopRedoPlaceOf, placeOf, target,
+    Structural.target, Structural.wfnet, Structural.childEntry,
+    Structural.childAddr, Structural.prefixPlace, Structural.entry]
+
+theorem loopRedoRootPlace_final
+    (body redo : POWL2 Activity) :
+    loopRedoRootPlaceOf body redo (target redo).wfnet.o =
+      placeOf (POWL2.loop body redo) (Structural.childExit [] 1)
+        (by
+          simpa [Structural.rawPlacesRoot, Structural.compiled,
+            Structural.normalize] using
+            Structural.loop_redo_exit_mem
+              (Structural.normalize body) (Structural.normalize redo) []) := by
+  apply Subtype.ext
+  simp [loopRedoRootPlaceOf, loopRedoPlaceOf, placeOf, target,
+    Structural.target, Structural.wfnet, Structural.childExit,
+    Structural.childAddr, Structural.prefixPlace, Structural.exit]
 
 theorem loopBodyRootTransition_pre
     (body redo : POWL2 Activity)
@@ -192,6 +366,34 @@ theorem loopBodyRootTransition_post_zero_of_not_prefix
     Structural.net, Structural.compiled, Structural.normalize,
     Structural.rawPost_loop_body_prefix_zero, hNoPrefix]
 
+theorem loopBodyRootTransition_pre_zero_of_not_mapped
+    (body redo : POWL2 Activity)
+    (t : (target body).wfnet.net.Transition)
+    (q : (target (POWL2.loop body redo)).wfnet.net.Place)
+    (hNotMapped :
+      ¬ ∃ p : (target body).wfnet.net.Place,
+        loopBodyRootPlaceOf body redo p = q) :
+    (target (POWL2.loop body redo)).wfnet.net.pre
+        (loopBodyRootTransitionOf body redo t) q = 0 :=
+  loopBodyRootTransition_pre_zero_of_not_prefix body redo t q (by
+    intro hPrefix
+    exact hNotMapped
+      (loopBodyRootPlaceOf_surjective_of_prefix body redo q hPrefix))
+
+theorem loopBodyRootTransition_post_zero_of_not_mapped
+    (body redo : POWL2 Activity)
+    (t : (target body).wfnet.net.Transition)
+    (q : (target (POWL2.loop body redo)).wfnet.net.Place)
+    (hNotMapped :
+      ¬ ∃ p : (target body).wfnet.net.Place,
+        loopBodyRootPlaceOf body redo p = q) :
+    (target (POWL2.loop body redo)).wfnet.net.post
+        (loopBodyRootTransitionOf body redo t) q = 0 :=
+  loopBodyRootTransition_post_zero_of_not_prefix body redo t q (by
+    intro hPrefix
+    exact hNotMapped
+      (loopBodyRootPlaceOf_surjective_of_prefix body redo q hPrefix))
+
 theorem loopRedoRootTransition_pre
     (body redo : POWL2 Activity)
     (t : (target redo).wfnet.net.Transition)
@@ -251,6 +453,34 @@ theorem loopRedoRootTransition_post_zero_of_not_prefix
     transitionOf, target, Structural.target, Structural.wfnet,
     Structural.net, Structural.compiled, Structural.normalize,
     Structural.rawPost_loop_redo_prefix_zero, hNoPrefix]
+
+theorem loopRedoRootTransition_pre_zero_of_not_mapped
+    (body redo : POWL2 Activity)
+    (t : (target redo).wfnet.net.Transition)
+    (q : (target (POWL2.loop body redo)).wfnet.net.Place)
+    (hNotMapped :
+      ¬ ∃ p : (target redo).wfnet.net.Place,
+        loopRedoRootPlaceOf body redo p = q) :
+    (target (POWL2.loop body redo)).wfnet.net.pre
+        (loopRedoRootTransitionOf body redo t) q = 0 :=
+  loopRedoRootTransition_pre_zero_of_not_prefix body redo t q (by
+    intro hPrefix
+    exact hNotMapped
+      (loopRedoRootPlaceOf_surjective_of_prefix body redo q hPrefix))
+
+theorem loopRedoRootTransition_post_zero_of_not_mapped
+    (body redo : POWL2 Activity)
+    (t : (target redo).wfnet.net.Transition)
+    (q : (target (POWL2.loop body redo)).wfnet.net.Place)
+    (hNotMapped :
+      ¬ ∃ p : (target redo).wfnet.net.Place,
+        loopRedoRootPlaceOf body redo p = q) :
+    (target (POWL2.loop body redo)).wfnet.net.post
+        (loopRedoRootTransitionOf body redo t) q = 0 :=
+  loopRedoRootTransition_post_zero_of_not_prefix body redo t q (by
+    intro hPrefix
+    exact hNotMapped
+      (loopRedoRootPlaceOf_surjective_of_prefix body redo q hPrefix))
 
 noncomputable def partialOrderChildTransitionOf
     (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
@@ -317,6 +547,20 @@ theorem partialOrderOriginalChildRootTransition_label
     Structural.normalize, Structural.rawLabel_partialOrder_child_prefix,
     POWL2.listGet?_map, hGet]
 
+theorem partialOrderOriginalChildRootTransition_traceOf
+    (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
+    {i : Nat} {child : POWL2 Activity}
+    (hGet : POWL2.listGet? children i = some child)
+    (ts : List (target child).wfnet.net.Transition) :
+    Petri.LabeledWFNet.traceOf (target (POWL2.partialOrder children order))
+        (ts.map (partialOrderOriginalChildRootTransitionOf
+          children order hGet)) =
+      Petri.LabeledWFNet.traceOf (target child) ts :=
+  Petri.LabeledWFNet.traceOf_map (target child)
+    (target (POWL2.partialOrder children order))
+    (partialOrderOriginalChildRootTransitionOf children order hGet)
+    (partialOrderOriginalChildRootTransition_label children order hGet) ts
+
 def partialOrderOriginalChildPlaceOf
     (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
     {i : Nat} {child : POWL2 Activity} (q : RawPlace)
@@ -340,6 +584,17 @@ def partialOrderOriginalChildRootPlaceOf
         Structural.childAddr] using
       Structural.rawPlaces_prefix_mem
         (Structural.compiled child) [i] [] q.2)
+
+theorem partialOrderOriginalChildRootPlaceOf_injective
+    (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
+    {i : Nat} {child : POWL2 Activity}
+    (hGet : POWL2.listGet? children i = some child) :
+    Function.Injective
+      (partialOrderOriginalChildRootPlaceOf children order hGet) := by
+  intro q r h
+  apply Subtype.ext
+  apply Structural.prefixPlace_injective [i]
+  exact congrArg Subtype.val h
 
 theorem partialOrderOriginalChildRootTransition_pre
     (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
@@ -484,6 +739,20 @@ theorem choiceGraphOriginalChildRootTransition_label
     Structural.normalize, Structural.rawLabel_choiceGraph_child_prefix,
     POWL2.listGet?_map, hGet]
 
+theorem choiceGraphOriginalChildRootTransition_traceOf
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} {child : POWL2 Activity}
+    (hGet : POWL2.listGet? children i = some child)
+    (ts : List (target child).wfnet.net.Transition) :
+    Petri.LabeledWFNet.traceOf (target (POWL2.choiceGraph children graph))
+        (ts.map (choiceGraphOriginalChildRootTransitionOf
+          children graph hGet)) =
+      Petri.LabeledWFNet.traceOf (target child) ts :=
+  Petri.LabeledWFNet.traceOf_map (target child)
+    (target (POWL2.choiceGraph children graph))
+    (choiceGraphOriginalChildRootTransitionOf children graph hGet)
+    (choiceGraphOriginalChildRootTransition_label children graph hGet) ts
+
 def choiceGraphOriginalChildPlaceOf
     (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
     {i : Nat} {child : POWL2 Activity} (q : RawPlace)
@@ -507,6 +776,17 @@ def choiceGraphOriginalChildRootPlaceOf
         Structural.childAddr] using
       Structural.rawPlaces_prefix_mem
         (Structural.compiled child) [i] [] q.2)
+
+theorem choiceGraphOriginalChildRootPlaceOf_injective
+    (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)
+    {i : Nat} {child : POWL2 Activity}
+    (hGet : POWL2.listGet? children i = some child) :
+    Function.Injective
+      (choiceGraphOriginalChildRootPlaceOf children graph hGet) := by
+  intro q r h
+  apply Subtype.ext
+  apply Structural.prefixPlace_injective [i]
+  exact congrArg Subtype.val h
 
 theorem choiceGraphOriginalChildRootTransition_pre
     (children : List (POWL2 Activity)) (graph : POWL2ChoiceGraph)

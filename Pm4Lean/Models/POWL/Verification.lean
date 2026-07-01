@@ -40,33 +40,48 @@ theorem partialOrder_child_wellFormed
     {child : POWL Activity} (hChild : child ∈ children) :
     WellFormed child := by
   have h' :
+      2 ≤ children.length ∧
       (∀ child ∈ children, WellFormed child) ∧
         IrreflexiveOnRange children.length order ∧
           TransitiveOnRange children.length order := by
     simpa [WellFormed] using h
-  exact h'.1 child hChild
+  exact h'.2.1 child hChild
+
+theorem partialOrder_min_arity
+    {children : List (POWL Activity)} {order : Nat → Nat → Prop}
+    (h : WellFormed (partialOrder children order)) :
+    2 ≤ children.length := by
+  have h' :
+      2 ≤ children.length ∧
+      (∀ child ∈ children, WellFormed child) ∧
+        IrreflexiveOnRange children.length order ∧
+          TransitiveOnRange children.length order := by
+    simpa [WellFormed] using h
+  exact h'.1
 
 theorem partialOrder_irreflexive
     {children : List (POWL Activity)} {order : Nat → Nat → Prop}
     (h : WellFormed (partialOrder children order)) :
     IrreflexiveOnRange children.length order := by
   have h' :
+      2 ≤ children.length ∧
       (∀ child ∈ children, WellFormed child) ∧
         IrreflexiveOnRange children.length order ∧
           TransitiveOnRange children.length order := by
     simpa [WellFormed] using h
-  exact h'.2.1
+  exact h'.2.2.1
 
 theorem partialOrder_transitive
     {children : List (POWL Activity)} {order : Nat → Nat → Prop}
     (h : WellFormed (partialOrder children order)) :
     TransitiveOnRange children.length order := by
   have h' :
+      2 ≤ children.length ∧
       (∀ child ∈ children, WellFormed child) ∧
         IrreflexiveOnRange children.length order ∧
           TransitiveOnRange children.length order := by
     simpa [WellFormed] using h
-  exact h'.2.2
+  exact h'.2.2.2
 
 end POWL
 end ProcessModel

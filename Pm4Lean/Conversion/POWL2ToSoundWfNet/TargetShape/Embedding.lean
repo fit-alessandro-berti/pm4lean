@@ -49,6 +49,31 @@ theorem mapMarking_zero_of_not_mapped
   classical
   simp [mapMarking, hNotMapped]
 
+theorem mapMarking_singleton
+    {N₁ N₂ : Petri.Net}
+    {mapPlace : N₁.Place → N₂.Place}
+    (hInj : Function.Injective mapPlace)
+    (p : N₁.Place) :
+    mapMarking mapPlace (Petri.Marking.singleton p) =
+      Petri.Marking.singleton (mapPlace p) := by
+  apply Petri.Marking.ext
+  intro q
+  by_cases hMapped : ∃ p' : N₁.Place, mapPlace p' = q
+  · obtain ⟨p', rfl⟩ := hMapped
+    rw [mapMarking_apply hInj]
+    by_cases hEq : p' = p
+    · subst hEq
+      simp [Petri.Marking.singleton]
+    · have hImageNe : mapPlace p' ≠ mapPlace p := by
+        intro hImage
+        exact hEq (hInj hImage)
+      simp [Petri.Marking.singleton, hEq, hImageNe]
+  · rw [mapMarking_zero_of_not_mapped (Petri.Marking.singleton p) q hMapped]
+    have hNe : q ≠ mapPlace p := by
+      intro hEq
+      exact hMapped ⟨p, hEq.symm⟩
+    simp [Petri.Marking.singleton, hNe]
+
 theorem enabled_map
     {N₁ N₂ : Petri.Net}
     {mapPlace : N₁.Place → N₂.Place}
@@ -136,6 +161,154 @@ theorem firingSequence_map
     hSeq
 
 end NetEmbedding
+
+theorem loopBodyRoot_map_initial
+    (body redo : POWL2 Activity) :
+    NetEmbedding.mapMarking (loopBodyRootPlaceOf body redo)
+        (target body).wfnet.initial =
+      Petri.Marking.singleton
+        (placeOf (POWL2.loop body redo) (Structural.childEntry [] 0)
+          (by
+            simpa [Structural.rawPlacesRoot, Structural.compiled,
+              Structural.normalize] using
+              Structural.loop_body_entry_mem
+                (Structural.normalize body) (Structural.normalize redo) [])) := by
+  rw [Petri.WFNet.initial]
+  rw [NetEmbedding.mapMarking_singleton
+    (loopBodyRootPlaceOf_injective body redo)]
+  rw [loopBodyRootPlace_initial]
+
+theorem loopBodyRoot_map_final
+    (body redo : POWL2 Activity) :
+    NetEmbedding.mapMarking (loopBodyRootPlaceOf body redo)
+        (target body).wfnet.final =
+      Petri.Marking.singleton
+        (placeOf (POWL2.loop body redo) (Structural.childExit [] 0)
+          (by
+            simpa [Structural.rawPlacesRoot, Structural.compiled,
+              Structural.normalize] using
+              Structural.loop_body_exit_mem
+                (Structural.normalize body) (Structural.normalize redo) [])) := by
+  rw [Petri.WFNet.final]
+  rw [NetEmbedding.mapMarking_singleton
+    (loopBodyRootPlaceOf_injective body redo)]
+  rw [loopBodyRootPlace_final]
+
+theorem loopBodyRoot_firingSequence_map
+    (body redo : POWL2 Activity)
+    {M M' : (target body).wfnet.net.Marking}
+    {ts : List (target body).wfnet.net.Transition}
+    (hSeq : Petri.FiringSequence (target body).wfnet.net M ts M') :
+    Petri.FiringSequence (target (POWL2.loop body redo)).wfnet.net
+      (NetEmbedding.mapMarking (loopBodyRootPlaceOf body redo) M)
+      (ts.map (loopBodyRootTransitionOf body redo))
+      (NetEmbedding.mapMarking (loopBodyRootPlaceOf body redo) M') :=
+  NetEmbedding.firingSequence_map
+    (loopBodyRootPlaceOf_injective body redo)
+    (loopBodyRootTransition_pre body redo)
+    (loopBodyRootTransition_post body redo)
+    (loopBodyRootTransition_pre_zero_of_not_mapped body redo)
+    (loopBodyRootTransition_post_zero_of_not_mapped body redo)
+    hSeq
+
+theorem loopBodyRoot_firingSequence
+    (body redo : POWL2 Activity)
+    {ts : List (target body).wfnet.net.Transition}
+    (hSeq : Petri.FiringSequence (target body).wfnet.net
+      (target body).wfnet.initial ts (target body).wfnet.final) :
+    Petri.FiringSequence (target (POWL2.loop body redo)).wfnet.net
+      (Petri.Marking.singleton
+        (placeOf (POWL2.loop body redo) (Structural.childEntry [] 0)
+          (by
+            simpa [Structural.rawPlacesRoot, Structural.compiled,
+              Structural.normalize] using
+              Structural.loop_body_entry_mem
+                (Structural.normalize body) (Structural.normalize redo) [])))
+      (ts.map (loopBodyRootTransitionOf body redo))
+      (Petri.Marking.singleton
+        (placeOf (POWL2.loop body redo) (Structural.childExit [] 0)
+          (by
+            simpa [Structural.rawPlacesRoot, Structural.compiled,
+              Structural.normalize] using
+              Structural.loop_body_exit_mem
+                (Structural.normalize body) (Structural.normalize redo) []))) := by
+  simpa [loopBodyRoot_map_initial body redo,
+    loopBodyRoot_map_final body redo] using
+    loopBodyRoot_firingSequence_map body redo hSeq
+
+theorem loopRedoRoot_map_initial
+    (body redo : POWL2 Activity) :
+    NetEmbedding.mapMarking (loopRedoRootPlaceOf body redo)
+        (target redo).wfnet.initial =
+      Petri.Marking.singleton
+        (placeOf (POWL2.loop body redo) (Structural.childEntry [] 1)
+          (by
+            simpa [Structural.rawPlacesRoot, Structural.compiled,
+              Structural.normalize] using
+              Structural.loop_redo_entry_mem
+                (Structural.normalize body) (Structural.normalize redo) [])) := by
+  rw [Petri.WFNet.initial]
+  rw [NetEmbedding.mapMarking_singleton
+    (loopRedoRootPlaceOf_injective body redo)]
+  rw [loopRedoRootPlace_initial]
+
+theorem loopRedoRoot_map_final
+    (body redo : POWL2 Activity) :
+    NetEmbedding.mapMarking (loopRedoRootPlaceOf body redo)
+        (target redo).wfnet.final =
+      Petri.Marking.singleton
+        (placeOf (POWL2.loop body redo) (Structural.childExit [] 1)
+          (by
+            simpa [Structural.rawPlacesRoot, Structural.compiled,
+              Structural.normalize] using
+              Structural.loop_redo_exit_mem
+                (Structural.normalize body) (Structural.normalize redo) [])) := by
+  rw [Petri.WFNet.final]
+  rw [NetEmbedding.mapMarking_singleton
+    (loopRedoRootPlaceOf_injective body redo)]
+  rw [loopRedoRootPlace_final]
+
+theorem loopRedoRoot_firingSequence_map
+    (body redo : POWL2 Activity)
+    {M M' : (target redo).wfnet.net.Marking}
+    {ts : List (target redo).wfnet.net.Transition}
+    (hSeq : Petri.FiringSequence (target redo).wfnet.net M ts M') :
+    Petri.FiringSequence (target (POWL2.loop body redo)).wfnet.net
+      (NetEmbedding.mapMarking (loopRedoRootPlaceOf body redo) M)
+      (ts.map (loopRedoRootTransitionOf body redo))
+      (NetEmbedding.mapMarking (loopRedoRootPlaceOf body redo) M') :=
+  NetEmbedding.firingSequence_map
+    (loopRedoRootPlaceOf_injective body redo)
+    (loopRedoRootTransition_pre body redo)
+    (loopRedoRootTransition_post body redo)
+    (loopRedoRootTransition_pre_zero_of_not_mapped body redo)
+    (loopRedoRootTransition_post_zero_of_not_mapped body redo)
+    hSeq
+
+theorem loopRedoRoot_firingSequence
+    (body redo : POWL2 Activity)
+    {ts : List (target redo).wfnet.net.Transition}
+    (hSeq : Petri.FiringSequence (target redo).wfnet.net
+      (target redo).wfnet.initial ts (target redo).wfnet.final) :
+    Petri.FiringSequence (target (POWL2.loop body redo)).wfnet.net
+      (Petri.Marking.singleton
+        (placeOf (POWL2.loop body redo) (Structural.childEntry [] 1)
+          (by
+            simpa [Structural.rawPlacesRoot, Structural.compiled,
+              Structural.normalize] using
+              Structural.loop_redo_entry_mem
+                (Structural.normalize body) (Structural.normalize redo) [])))
+      (ts.map (loopRedoRootTransitionOf body redo))
+      (Petri.Marking.singleton
+        (placeOf (POWL2.loop body redo) (Structural.childExit [] 1)
+          (by
+            simpa [Structural.rawPlacesRoot, Structural.compiled,
+              Structural.normalize] using
+              Structural.loop_redo_exit_mem
+                (Structural.normalize body) (Structural.normalize redo) []))) := by
+  simpa [loopRedoRoot_map_initial body redo,
+    loopRedoRoot_map_final body redo] using
+    loopRedoRoot_firingSequence_map body redo hSeq
 
 end TargetShape
 

@@ -1,4 +1,5 @@
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.Basic
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.Structural
+import Pm4Lean.Conversion.POWL2ToSoundWfNet.Structural.Marking
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.Structural.Shape
 import Pm4Lean.Conversion.POWL2ToSoundWfNet.TargetShape

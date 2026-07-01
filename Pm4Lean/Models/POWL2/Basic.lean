@@ -12,11 +12,25 @@ structure POWL2ChoiceGraph where
 
 namespace POWL2ChoiceGraph
 
+/-- A child node is reachable from the artificial choice-graph source. -/
+inductive ReachableFromStart (g : POWL2ChoiceGraph) : Nat → Prop where
+  | start {i : Nat} : g.start i → ReachableFromStart g i
+  | step {i j : Nat} : ReachableFromStart g i → g.edge i j →
+      ReachableFromStart g j
+
+/-- A child node can reach the artificial choice-graph sink. -/
+inductive CanReachFinish (g : POWL2ChoiceGraph) : Nat → Prop where
+  | finish {i : Nat} : g.finish i → CanReachFinish g i
+  | step {i j : Nat} : g.edge i j → CanReachFinish g j →
+      CanReachFinish g i
+
 /-- All choice-graph references stay within the finite child-index range. -/
 def WellFormed (childCount : Nat) (g : POWL2ChoiceGraph) : Prop :=
+  2 ≤ childCount ∧
   (∀ i, g.start i → i < childCount) ∧
   (∀ i, g.finish i → i < childCount) ∧
-  (∀ i j, g.edge i j → i < childCount ∧ j < childCount)
+  (∀ i j, g.edge i j → i < childCount ∧ j < childCount) ∧
+  (∀ i, i < childCount → ReachableFromStart g i ∧ CanReachFinish g i)
 
 end POWL2ChoiceGraph
 
@@ -46,6 +60,7 @@ def WellFormed : POWL2 Activity → Prop
       (∀ child ∈ children, WellFormed child) ∧
       POWL2ChoiceGraph.WellFormed children.length graph
   | partialOrder children order =>
+      2 ≤ children.length ∧
       (∀ child ∈ children, WellFormed child) ∧
       POWL.IrreflexiveOnRange children.length order ∧
       POWL.TransitiveOnRange children.length order

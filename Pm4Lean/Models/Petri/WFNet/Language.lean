@@ -82,6 +82,14 @@ theorem language_of_firingSequence
     operationalLanguage LW (traceOf LW ts) :=
   ⟨ts, hSeq, rfl⟩
 
+theorem operationalLanguage.exists_firingSequence
+    (LW : LabeledWFNet Activity) {σ : ProcessModel.Trace Activity}
+    (h : operationalLanguage LW σ) :
+    ∃ ts : List LW.wfnet.net.Transition,
+      FiringSequence LW.wfnet.net LW.wfnet.initial ts LW.wfnet.final ∧
+      traceOf LW ts = σ :=
+  h
+
 theorem language_of_firingSequence_append
     (LW : LabeledWFNet Activity)
     {M : LW.wfnet.net.Marking}
@@ -91,6 +99,18 @@ theorem language_of_firingSequence_append
     operationalLanguage LW (traceOf LW xs ++ traceOf LW ys) := by
   refine ⟨xs ++ ys, FiringSequence.append hxs hys, ?_⟩
   exact traceOf_append LW xs ys
+
+theorem firingSequence_append_trace
+    (LW : LabeledWFNet Activity)
+    {M : LW.wfnet.net.Marking}
+    {xs ys : List LW.wfnet.net.Transition}
+    {σ τ : ProcessModel.Trace Activity}
+    (hxs : FiringSequence LW.wfnet.net LW.wfnet.initial xs M)
+    (hys : FiringSequence LW.wfnet.net M ys LW.wfnet.final)
+    (hσ : traceOf LW xs = σ) (hτ : traceOf LW ys = τ) :
+    operationalLanguage LW (σ ++ τ) := by
+  refine ⟨xs ++ ys, FiringSequence.append hxs hys, ?_⟩
+  rw [traceOf_append, hσ, hτ]
 
 theorem operationalLanguage_of_map
     (source target : LabeledWFNet Activity)

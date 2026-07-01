@@ -97,6 +97,18 @@ theorem tau_language_realized_by_firing
   subst h
   exact tau_operational_epsilon
 
+theorem tau_language_firing_witness
+    {σ : Trace Activity}
+    (h : POWL2.language (POWL2.tau : POWL2 Activity) σ) :
+    ∃ ts : List (target (POWL2.tau : POWL2 Activity)).wfnet.net.Transition,
+      Petri.FiringSequence (target (POWL2.tau : POWL2 Activity)).wfnet.net
+        (target (POWL2.tau : POWL2 Activity)).wfnet.initial ts
+        (target (POWL2.tau : POWL2 Activity)).wfnet.final ∧
+      Petri.LabeledWFNet.traceOf (target (POWL2.tau : POWL2 Activity)) ts =
+        σ := by
+  simpa [Petri.LabeledWFNet.operationalLanguage] using
+    tau_language_realized_by_firing h
+
 theorem activity_atom_label (a : Activity) :
     let p := POWL2.activity a
     let t := transitionOf p (Structural.transition [] TransitionKind.atom)
@@ -158,6 +170,17 @@ theorem activity_language_realized_by_firing
   simp [POWL2.language, Language.singleton] at h
   subst h
   exact activity_operational_singleton a
+
+theorem activity_language_firing_witness
+    (a : Activity) {σ : Trace Activity}
+    (h : POWL2.language (POWL2.activity a) σ) :
+    ∃ ts : List (target (POWL2.activity a)).wfnet.net.Transition,
+      Petri.FiringSequence (target (POWL2.activity a)).wfnet.net
+        (target (POWL2.activity a)).wfnet.initial ts
+        (target (POWL2.activity a)).wfnet.final ∧
+      Petri.LabeledWFNet.traceOf (target (POWL2.activity a)) ts = σ := by
+  simpa [Petri.LabeledWFNet.operationalLanguage] using
+    activity_language_realized_by_firing a h
 
 end TargetShape
 

@@ -112,6 +112,21 @@ theorem partialOrder_empty_language_realized_by_firing
   rw [hσ]
   exact partialOrder_empty_operational_epsilon order
 
+theorem partialOrder_empty_language_firing_witness
+    (order : Nat → Nat → Prop) {σ : Trace Activity}
+    (h : POWL2.language
+      (POWL2.partialOrder ([] : List (POWL2 Activity)) order) σ) :
+    ∃ ts : List
+        (target (POWL2.partialOrder ([] : List (POWL2 Activity)) order)).wfnet.net.Transition,
+      Petri.FiringSequence
+        (target (POWL2.partialOrder ([] : List (POWL2 Activity)) order)).wfnet.net
+        (target (POWL2.partialOrder ([] : List (POWL2 Activity)) order)).wfnet.initial ts
+        (target (POWL2.partialOrder ([] : List (POWL2 Activity)) order)).wfnet.final ∧
+      Petri.LabeledWFNet.traceOf
+        (target (POWL2.partialOrder ([] : List (POWL2 Activity)) order)) ts = σ := by
+  simpa [Petri.LabeledWFNet.operationalLanguage] using
+    partialOrder_empty_language_realized_by_firing order h
+
 theorem partialOrder_begin_root_mem
     (children : List (POWL2 Activity)) (order : Nat → Nat → Prop)
     {i : Nat} (hRange : i < children.length) :
